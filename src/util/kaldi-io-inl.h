@@ -1,4 +1,4 @@
-// util/common-utils.h
+// util/kaldi-io-inl.h
 
 // Copyright 2009-2011 Microsoft Corporation
 
@@ -16,16 +16,31 @@
 // MERCHANTABLITY OR NON-INFRINGEMENT.
 // See the Apache 2 License for the specific language governing permissions and
 // limitations under the License.
-#ifndef KALDI_UTIL_COMMON_UTILS_H_
-#define KALDI_UTIL_COMMON_UTILS_H_
+#ifndef KALDI_UTIL_KALDI_IO_INL_H_
+#define KALDI_UTIL_KALDI_IO_INL_H_
 
-#include "base/kaldi-common.h"
-#include "util/parse-options.h"
-#include "util/kaldi-io.h"
-#include "util/simple-io-funcs.h"
-#include "util/kaldi-holder.h"
-#include "util/kaldi-table.h"
-#include "util/table-types.h"
-#include "util/text-utils.h"
+#include<string>
 
-#endif  // KALDI_UTIL_COMMON_UTILS_H_
+namespace kaldi {
+
+bool Input::Open(const std::string &rxfilename, bool *binary) {
+  return OpenInternal(rxfilename, true, binary);
+}
+
+bool Input::OpenTextMode(const std::string &rxfilename) {
+  return OpenInternal(rxfilename, false, NULL);
+}
+
+bool Input::IsOpen() {
+  return impl_ != NULL;
+}
+
+bool Output::IsOpen() {
+  return impl_ != NULL;
+}
+
+
+}  // end namespace kaldi.
+
+
+#endif  // KALDI_UTIL_KALDI_IO_INL_H_

@@ -4,7 +4,7 @@
 
 SHELL := /bin/bash
 
-SUBDIRS = base decoder feat fstext gmm gmmbin hmm lat lm matrix sgmm thread transform tree util
+SUBDIRS = base decoder feat fstext gmm gmmbin hmm lat latbin lm matrix sgmm thread transform tree util
 
 CUDAMEMTESTDIR = cudamatrix
 
@@ -137,7 +137,7 @@ $(EXT_SUBDIRS) : mklibdir
 # this is necessary for correct parallel compilation
 #1)The tools depend on all the libraries
 
-gmmbin: \
+gmmbin latbin: \
  base matrix util feat tree thread gmm transform fstext hmm lm decoder lat
 
 #2)The libraries have inter-dependencies

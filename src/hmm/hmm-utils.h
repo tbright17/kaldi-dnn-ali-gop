@@ -22,7 +22,6 @@
 
 #include "hmm/hmm-topology.h"
 #include "hmm/transition-model.h"
-#include "lat/kaldi-lattice.h"
 
 namespace kaldi {
 
@@ -188,15 +187,6 @@ void AddTransitionProbs(const TransitionModel &trans_model,
                         BaseFloat transition_scale,
                         BaseFloat self_loop_scale,
                         fst::VectorFst<fst::StdArc> *fst);
-
-/**
-   This is as AddSelfLoops(), but operates on a Lattice, where
-   it affects the graph part of the weight (the first element
-   of the pair). */
-void AddTransitionProbs(const TransitionModel &trans_model,
-                        BaseFloat transition_scale,
-                        BaseFloat self_loop_scale,
-                        Lattice *lat);
 
 
 /// Returns a transducer from pdfs plus one (input) to  transition-ids (output).

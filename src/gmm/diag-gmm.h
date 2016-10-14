@@ -35,7 +35,6 @@
 
 namespace kaldi {
 
-class FullGmm;
 class DiagGmmNormal;
 
 /// Definition for Gaussian Mixture Model with diagonal covariances
@@ -75,8 +74,6 @@ class DiagGmm {
 
   /// Copies from given DiagGmm
   void CopyFromDiagGmm(const DiagGmm &diaggmm);
-  /// Copies from given FullGmm
-  void CopyFromFullGmm(const FullGmm &fullgmm);
 
   /// Returns the log-likelihood of a data point (vector) given the GMM
   BaseFloat LogLikelihood(const VectorBase<BaseFloat> &data) const;
@@ -164,10 +161,6 @@ class DiagGmm {
 
   /// this = rho x source + (1-rho) x this
   void Interpolate(BaseFloat rho, const DiagGmm &source,
-                   GmmFlagsType flags = kGmmAll);
-
-  /// this = rho x source + (1-rho) x this
-  void Interpolate(BaseFloat rho, const FullGmm &source,
                    GmmFlagsType flags = kGmmAll);
 
   /// Const accessors

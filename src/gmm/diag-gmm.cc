@@ -29,8 +29,6 @@
 
 #include "gmm/diag-gmm.h"
 #include "gmm/diag-gmm-normal.h"
-#include "gmm/full-gmm.h"
-#include "gmm/full-gmm-normal.h"
 #include "tree/clusterable-classes.h"
 
 namespace kaldi {
@@ -87,28 +85,6 @@ void DiagGmm::CopyFromDiagGmm(const DiagGmm &diaggmm) {
   inv_vars_.CopyFromMat(diaggmm.inv_vars_);
   means_invvars_.CopyFromMat(diaggmm.means_invvars_);
   valid_gconsts_ = diaggmm.valid_gconsts_;
-}
-
-void DiagGmm::CopyFromFullGmm(const FullGmm &fullgmm) {
-  int32 num_comp = fullgmm.NumGauss(), dim = fullgmm.Dim();
-  Resize(num_comp, dim);
-  gconsts_.CopyFromVec(fullgmm.gconsts());
-  weights_.CopyFromVec(fullgmm.weights());
-  Matrix<BaseFloat> means(num_comp, dim);
-  fullgmm.GetMeans(&means);
-  int32 ncomp = NumGauss();
-  for (int32 mix = 0; mix < ncomp; mix++) {
-    SpMatrix<double> covar(dim);
-    covar.CopyFromSp(fullgmm.inv_covars()[mix]);
-    covar.Invert();
-    Vector<double> diag(dim);
-    diag.CopyDiagFromPacked(covar);
-    diag.InvertElements();
-    inv_vars_.Row(mix).CopyFromVec(diag);
-  }
-  means_invvars_.CopyFromMat(means);
-  means_invvars_.MulElements(inv_vars_);
-  ComputeGconsts();
 }
 
 int32 DiagGmm::ComputeGconsts() {
@@ -664,38 +640,6 @@ void DiagGmm::Interpolate(BaseFloat rho, const DiagGmm &source,
   if (flags & kGmmVariances) {
     us.vars_.Scale(1.0 - rho);
     us.vars_.AddMat(rho, them.vars_);
-  }
-
-  us.CopyToDiagGmm(this);
-  ComputeGconsts();
-}
-
-void DiagGmm::Interpolate(BaseFloat rho, const FullGmm &source,
-                          GmmFlagsType flags) {
-  KALDI_ASSERT(NumGauss() == source.NumGauss());
-  KALDI_ASSERT(Dim() == source.Dim());
-  DiagGmmNormal us(*this);
-  FullGmmNormal them(source);
-
-  if (flags & kGmmWeights) {
-    us.weights_.Scale(1.0 - rho);
-    us.weights_.AddVec(rho, them.weights_);
-    us.weights_.Scale(1.0 / us.weights_.Sum());
-  }
-
-  if (flags & kGmmMeans) {
-    us.means_.Scale(1.0 - rho);
-    us.means_.AddMat(rho, them.means_);
-  }
-
-  if (flags & kGmmVariances) {
-    for (int32 i = 0; i < NumGauss(); i++) {
-      us.vars_.Scale(1. - rho);
-      Vector<double> diag(Dim());
-      for (int32 j = 0; j < Dim(); j++)
-        diag(j) = them.vars_[i](j, j);
-      us.vars_.Row(i).AddVec(rho, diag);
-    }
   }
 
   us.CopyToDiagGmm(this);

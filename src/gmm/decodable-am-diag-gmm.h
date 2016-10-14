@@ -28,9 +28,6 @@
 #include "gmm/am-diag-gmm.h"
 #include "hmm/transition-model.h"
 #include "itf/decodable-itf.h"
-#include "transform/regression-tree.h"
-#include "transform/regtree-fmllr-diag-gmm.h"
-#include "transform/regtree-mllr-diag-gmm.h"
 
 namespace kaldi {
 

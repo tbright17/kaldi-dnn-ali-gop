@@ -32,8 +32,6 @@
 #include "util/kaldi-holder.h"
 #include "util/text-utils.h"
 #include "util/stl-utils.h"  // for StringHasher.
-#include "thread/kaldi-thread.h"
-#include "thread/kaldi-semaphore.h"
 
 
 namespace kaldi {
@@ -696,179 +694,6 @@ template<class Holder>  class SequentialTableReaderArchiveImpl:
   } state_;
 };
 
-// this is for when someone adds the 'th' modifier; it wraps around the basic
-// implementation and allows it to do the reading in a background thread.
-template<class Holder>
-class SequentialTableReaderBackgroundImpl:
-      public SequentialTableReaderImplBase<Holder> {
- public:
-  typedef typename Holder::T T;
-
-  SequentialTableReaderBackgroundImpl(
-      SequentialTableReaderImplBase<Holder> *base_reader):
-      base_reader_(base_reader) {}
-
-  // This function ignores the rxfilename argument.
-  // We use the same function signature as the regular Open(),
-  // for convenience.
-  virtual bool Open(const std::string &rxfilename) {
-    KALDI_ASSERT(base_reader_ != NULL &&
-                 base_reader_->IsOpen());  // or code error.
-    {
-      pthread_attr_t pthread_attr;
-      pthread_attr_init(&pthread_attr);
-      int32 ret = pthread_create(
-          &thread_,
-          &pthread_attr,
-          SequentialTableReaderBackgroundImpl<Holder>::run,
-          static_cast<void*>(this));
-      if (ret != 0) {
-        const char *c = strerror(ret);
-        KALDI_WARN << "Error creating thread, errno was: " << c;
-        return false;
-      }
-    }
-
-    if (!base_reader_->Done())
-      Next();
-    return true;
-  }
-
-  virtual bool IsOpen() const {
-    // Close() sets base_reader_ to NULL, and we never initialize this object
-    // with a non-open base_reader_, so no need to check if it's open.
-    return base_reader_ != NULL;
-  }
-
-  void RunInBackground() {
-    try {
-      // This function is called in the background thread.  The whole point of
-      // the background thread is that we don't want to do the actual reading
-      // (inside Next()) in the foreground.
-      while (base_reader_ != NULL && !base_reader_->Done()) {
-        consumer_sem_.Signal();
-        // Here is where the consumer process (parent thread) gets to do its
-        // stuff.  Principally it calls SwapHolder()-- a shallow swap that is
-        // cheap.
-        producer_sem_.Wait();
-        // we check that base_reader_ is not NULL in case Close() was
-        // called in the main thread.
-        if (base_reader_ != NULL)
-          base_reader_->Next();   //  here is where the work happens.
-      }
-      // this signal will be waited on in the Next() function of the foreground
-      // thread if it is still running, or Close() otherwise.
-      consumer_sem_.Signal();
-      // this signal may be waited on in Close().
-      consumer_sem_.Signal();
-    } catch (...) {
-      // There is nothing we called above that could potentially throw due to
-      // user data.  So we treat reaching this point as a code-error condition.
-      // Closing base_reader_ will trigger an exception in Next() in the main
-      // thread when it checks that base_reader_->IsOpen().
-      if (base_reader_->IsOpen()) {
-        base_reader_->Close();
-        delete base_reader_;
-        base_reader_ = NULL;
-      }
-      consumer_sem_.Signal();
-      return;
-    }
-  }
-  static void* run(void *object_in) {
-    SequentialTableReaderBackgroundImpl<Holder> *object =
-        reinterpret_cast<SequentialTableReaderBackgroundImpl<Holder>*>(object_in);
-    object->RunInBackground();
-    return NULL;
-  }
-  virtual bool Done() const {
-    return key_.empty();
-  }
-  virtual std::string Key() {
-    if (key_.empty())
-      KALDI_ERR << "Calling Key() at the wrong time.";
-    return key_;
-  }
-  virtual const T &Value() {
-    if (key_.empty())
-      KALDI_ERR << "Calling Value() at the wrong time.";
-    return holder_.Value();
-  }
-  void SwapHolder(Holder *other_holder) {
-    KALDI_ERR << "SwapHolder() should not be called on this class.";
-  }
-  virtual void FreeCurrent() {
-    if (key_.empty())
-      KALDI_ERR << "Calling FreeCurrent() at the wrong time.";
-    // note: ideally a call to Value() should crash if you have just called
-    // FreeCurrent().  For typical holders such as KaldiObjectHolder this will
-    // happen inside the holder_.Value() call.  This won't be the case for all
-    // holders, but it's not a great loss (just a missed opportunity to spot a
-    // code error).
-    holder_.Clear();
-  }
-  virtual void Next() {
-    consumer_sem_.Wait();
-    if (base_reader_ == NULL || !base_reader_->IsOpen())
-      KALDI_ERR << "Error detected (likely code error) in background "
-                << "reader (',bg' option)";
-    if (base_reader_->Done()) {
-      // there is nothing else to read.
-      key_ = "";
-    } else {
-      key_ = base_reader_->Key();
-      base_reader_->SwapHolder(&holder_);
-    }
-    // this Signal() tells the producer thread, in the background,
-    // that it's now safe to read the next value.
-    producer_sem_.Signal();
-  }
-
-  // note: we can be sure that Close() won't be called twice, as the TableReader
-  // object will delete this object after calling Close.
-  virtual bool Close() {
-    KALDI_ASSERT(base_reader_ != NULL && KALDI_PTHREAD_PTR(thread_) != 0);
-    // wait until the producer thread is idle.
-    consumer_sem_.Wait();
-    bool ans = true;
-    try {
-      ans = base_reader_->Close();
-    } catch (...) {
-      ans = false;
-    }
-    delete base_reader_;
-    // setting base_reader_ to NULL will cause the loop in the producer thread
-    // to exit.
-    base_reader_ = NULL;
-    producer_sem_.Signal();
-
-    if (pthread_join(thread_, NULL) != 0) {
-      KALDI_WARN << "Error rejoining thread.";
-      return false;
-    }
-    return ans;
-  }
-  ~SequentialTableReaderBackgroundImpl() {
-    if (base_reader_) {
-      if (!Close()) {
-        KALDI_ERR << "Error detected closing background reader "
-                  << "(relates to ',bg' modifier)";
-      }
-    }
-  }
- private:
-  std::string key_;
-  Holder holder_;
-  // I couldn't figure out what to call these semaphores.  consumer_sem_ is the
-  // one that the consumer (main thread) waits on; producer_sem_ is the one
-  // that the producer (background thread) waits on.
-  Semaphore consumer_sem_;
-  Semaphore producer_sem_;
-  pthread_t thread_;
-  SequentialTableReaderImplBase<Holder> *base_reader_;
-
-};
-
 template<class Holder>
 SequentialTableReader<Holder>::SequentialTableReader(const std::string
                                                      &rspecifier): impl_(NULL) {
@@ -900,15 +725,6 @@ bool SequentialTableReader<Holder>::Open(const std::string &rspecifier) {
     delete impl_;
     impl_ = NULL;
     return false;  // sub-object will have printed warnings.
-  }
-  if (opts.background) {
-    impl_ = new SequentialTableReaderBackgroundImpl<Holder>(
-        impl_);
-    if (!impl_->Open("")) {
-      // the rxfilename is ignored in that Open() call.
-      // It should only return false on code error.
-      return false;
-    }
   }
   return true;
 }

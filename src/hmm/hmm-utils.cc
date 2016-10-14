@@ -977,36 +977,6 @@ void AddTransitionProbs(const TransitionModel &trans_model,
   }
 }
 
-void AddTransitionProbs(const TransitionModel &trans_model,
-                        BaseFloat transition_scale,
-                        BaseFloat self_loop_scale,
-                        Lattice *lat) {
-  using namespace fst;
-  int num_tids = trans_model.NumTransitionIds();
-  for (fst::StateIterator<Lattice> siter(*lat);
-       !siter.Done();
-       siter.Next()) {
-    for (MutableArcIterator<Lattice> aiter(lat, siter.Value());
-         !aiter.Done();
-         aiter.Next()) {
-      LatticeArc arc = aiter.Value();
-      LatticeArc::Label l = arc.ilabel;
-      if (l >= 1 && l <= num_tids) {  // a transition-id.
-        BaseFloat scaled_log_prob = GetScaledTransitionLogProb(trans_model,
-                                                               l,
-                                                               transition_scale,
-                                                               self_loop_scale);
-        // cost is negated log prob.
-        arc.weight.SetValue1(arc.weight.Value1() - scaled_log_prob);
-      } else if (l != 0) {
-        KALDI_ERR << "AddTransitionProbs: invalid symbol " << arc.ilabel
-                  << " on lattice input side.";
-      }
-      aiter.SetValue(arc);
-    }
-  }
-}
-
 
 // This function takes a phone-sequence with word-start and word-end
 // tokens in it, and a word-sequence, and outputs the pronunciations

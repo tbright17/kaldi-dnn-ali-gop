@@ -43,6 +43,7 @@ GTAGS
 GRTAGS
 GPATH
 GSYMS
+.tags
 
 # Make dependencies
 .depend.mk
@@ -72,6 +73,7 @@ GSYMS
 /egs/*/s*/data
 
 # /tools/
+/tools
 /tools/ATLAS/
 /tools/atlas3.8.3.tar.gz
 /tools/irstlm/

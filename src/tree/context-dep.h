@@ -112,42 +112,6 @@ class ContextDependency: public ContextDependencyInterface {
   KALDI_DISALLOW_COPY_AND_ASSIGN(ContextDependency);
 };
 
-/// GenRandContextDependency is mainly of use for debugging.  Phones must be sorted and uniq
-/// on input.
-/// @param phones [in] A vector of phone id's [must be sorted and uniq].
-/// @param ensure_all_covered [in] boolean argument; if true,  GenRandContextDependency
-///        generates a context-dependency object that "works" for all phones [no gaps].
-/// @param num_pdf_classes [out] outputs a vector indexed by phone, of the number
-///          of pdf classes (e.g. states) for that phone.
-/// @return Returns the a context dependency object.
-ContextDependency *GenRandContextDependency(const std::vector<int32> &phones,
-                                            bool ensure_all_covered,
-                                            std::vector<int32> *num_pdf_classes);
-
-/// GenRandContextDependencyLarge is like GenRandContextDependency but generates a larger tree
-/// with specified N and P for use in "one-time" larger-scale tests.
-ContextDependency *GenRandContextDependencyLarge(const std::vector<int32> &phones,
-                                                 int N, int P,
-                                                 bool ensure_all_covered,
-                                                 std::vector<int32> *num_pdf_classes);
-
-// MonophoneContextDependency() returns a new ContextDependency object that
-// corresponds to a monophone system.
-// The map phone2num_pdf_classes maps from the phone id to the number of
-// pdf-classes we have for that phone (e.g. 3, so the pdf-classes would be
-// 0, 1, 2).
-
-ContextDependency*
-MonophoneContextDependency(const std::vector<int32> phones,
-                           const std::vector<int32> phone2num_pdf_classes);
-
-// MonophoneContextDependencyShared is as MonophoneContextDependency but lets
-// you define classes of phones which share pdfs (e.g. different stress-markers of a single
-// phone.)  Each element of phone_classes is a set of phones that are in that class.
-ContextDependency*
-MonophoneContextDependencyShared(const std::vector<std::vector<int32> > phone_classes,
-                                 const std::vector<int32> phone2num_pdf_classes);
-
 
 // Important note:
 // Statistics for training decision trees will be of type:

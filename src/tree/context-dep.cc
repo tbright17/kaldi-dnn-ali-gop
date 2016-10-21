@@ -19,7 +19,6 @@
 
 #include "tree/context-dep.h"
 #include "base/kaldi-math.h"
-#include "tree/build-tree.h"
 
 namespace kaldi {
 
@@ -41,104 +40,6 @@ bool ContextDependency::Compute(const std::vector<int32> &phoneseq,
   }
   KALDI_ASSERT(pdf_id != NULL);
   return to_pdf_->Map(event_vec, pdf_id);
-}
-
-ContextDependency *GenRandContextDependency(const std::vector<int32> &phone_ids,
-                                            bool ensure_all_covered,
-                                            std::vector<int32> *hmm_lengths) {
-  KALDI_ASSERT(IsSortedAndUniq(phone_ids));
-  int32 num_phones = phone_ids.size();
-  int32 num_stats = 1 + (Rand() % 15) * (Rand() % 15);  // up to 14^2 + 1 separate stats.
-  int32 N = 2 + Rand() % 3;  // 2, 3 or 4.
-  int32 P = Rand() % N;
-  float ctx_dep_prob = 0.7 + 0.3*RandUniform();
-  int32 max_phone = *std::max_element(phone_ids.begin(), phone_ids.end());
-  hmm_lengths->clear();
-  hmm_lengths->resize(max_phone + 1, -1);
-  std::vector<bool> is_ctx_dep(max_phone + 1);
-
-  for (int32 i = 0; i <= max_phone; i++) {
-    (*hmm_lengths)[i] = 1 + Rand() % 3;
-    is_ctx_dep[i] = (RandUniform() < ctx_dep_prob);  // true w.p. ctx_dep_prob.
-  }
-  for (size_t i = 0; i < (size_t) num_phones; i++)
-    KALDI_VLOG(2) <<  "For idx = " << i
-                  << ", (phone_id, hmm_length, is_ctx_dep) == "
-                  << (phone_ids[i]) << " " << ((*hmm_lengths)[phone_ids[i]])
-                  << " " << (is_ctx_dep[phone_ids[i]]);
-  // Generate rand stats.
-  BuildTreeStatsType stats;
-  size_t dim = 3 + Rand() % 20;
-  GenRandStats(dim, num_stats, N, P, phone_ids, *hmm_lengths,
-               is_ctx_dep, ensure_all_covered, &stats);
-
-  // Now build the tree.
-
-  Questions qopts;
-  int32 num_quest = Rand() % 10, num_iters = rand () % 5;
-  qopts.InitRand(stats, num_quest, num_iters, kAllKeysUnion);  // This was tested in build-tree-utils-test.cc
-
-  float thresh = 100.0 * RandUniform();
-
-  EventMap *tree = NULL;
-  std::vector<std::vector<int32> > phone_sets(phone_ids.size());
-  for (size_t i = 0; i < phone_ids.size(); i++)
-    phone_sets[i].push_back(phone_ids[i]);
-  std::vector<bool> share_roots(phone_sets.size(), true),
-      do_split(phone_sets.size(), true);
-
-  tree = BuildTree(qopts, phone_sets, *hmm_lengths, share_roots,
-                   do_split, stats, thresh, 1000, 0.0, P);
-  DeleteBuildTreeStats(&stats);
-  return new ContextDependency(N, P, tree);
-}
-
-
-ContextDependency *GenRandContextDependencyLarge(const std::vector<int32> &phone_ids,
-                                                 int N, int P,
-                                                 bool ensure_all_covered,
-                                                 std::vector<int32> *hmm_lengths) {
-  KALDI_ASSERT(IsSortedAndUniq(phone_ids));
-  int32 num_phones = phone_ids.size();
-  int32 num_stats = 3000;  // each is a separate context.
-  float ctx_dep_prob = 0.9;
-  KALDI_ASSERT(num_phones > 0);
-  hmm_lengths->clear();
-  int32 max_phone = *std::max_element(phone_ids.begin(), phone_ids.end());
-  hmm_lengths->resize(max_phone + 1, -1);
-  std::vector<bool> is_ctx_dep(max_phone + 1);
-
-  for (int32 i = 0; i <= max_phone; i++) {
-    (*hmm_lengths)[i] = 1 + Rand() % 3;
-    is_ctx_dep[i] = (RandUniform() < ctx_dep_prob);  // true w.p. ctx_dep_prob.
-  }
-  for (size_t i = 0; i < (size_t) num_phones; i++) {
-    KALDI_VLOG(2) <<  "For idx = "<< i << ", (phone_id, hmm_length, is_ctx_dep) == " << (phone_ids[i]) << " " << ((*hmm_lengths)[phone_ids[i]]) << " " << (is_ctx_dep[phone_ids[i]]);
-  }
-  // Generate rand stats.
-  BuildTreeStatsType stats;
-  size_t dim = 3 + Rand() % 20;
-  GenRandStats(dim, num_stats, N, P, phone_ids, *hmm_lengths, is_ctx_dep, ensure_all_covered, &stats);
-
-  // Now build the tree.
-
-  Questions qopts;
-  int32 num_quest = 40, num_iters = 0;
-  qopts.InitRand(stats, num_quest, num_iters, kAllKeysUnion);  // This was tested in build-tree-utils-test.cc
-
-  float thresh = 100.0 * RandUniform();
-
-  EventMap *tree = NULL;
-  std::vector<std::vector<int32> > phone_sets(phone_ids.size());
-  for (size_t i = 0; i < phone_ids.size(); i++)
-    phone_sets[i].push_back(phone_ids[i]);
-  std::vector<bool> share_roots(phone_sets.size(), true),
-      do_split(phone_sets.size(), true);
-
-  tree = BuildTree(qopts, phone_sets, *hmm_lengths, share_roots,
-                   do_split, stats, thresh, 1000, 0.0, P);
-  DeleteBuildTreeStats(&stats);
-  return new ContextDependency(N, P, tree);
 }
 
 
@@ -217,33 +118,6 @@ void ContextDependency::GetPdfInfo(const std::vector<int32> &phones,
     KALDI_ASSERT(IsSortedAndUniq( ((*pdf_info)[i])));  // should have no dups.
   }
 }
-
-
-
-ContextDependency*
-MonophoneContextDependency(const std::vector<int32> phones,
-                           const std::vector<int32> phone2num_pdf_classes) {
-  std::vector<std::vector<int32> > phone_sets(phones.size());
-  for (size_t i = 0; i < phones.size(); i++) phone_sets[i].push_back(phones[i]);
-  std::vector<bool> share_roots(phones.size(), false);  // don't share roots.
-  // N is context size, P = position of central phone (must be 0).
-  int32 num_leaves = 0, P = 0, N = 1;
-  EventMap *pdf_map = GetStubMap(P, phone_sets, phone2num_pdf_classes, share_roots, &num_leaves);
-  return new ContextDependency(N, P, pdf_map);
-}
-
-ContextDependency*
-MonophoneContextDependencyShared(const std::vector<std::vector<int32> > phone_sets,
-                                 const std::vector<int32> phone2num_pdf_classes) {
-  std::vector<bool> share_roots(phone_sets.size(), false);  // don't share roots.
-  // N is context size, P = position of central phone (must be 0).
-  int32 num_leaves = 0, P = 0, N = 1;
-  EventMap *pdf_map = GetStubMap(P, phone_sets, phone2num_pdf_classes, share_roots, &num_leaves);
-  return new ContextDependency(N, P, pdf_map);
-}
-
-
-
 
 
 } // end namespace kaldi.

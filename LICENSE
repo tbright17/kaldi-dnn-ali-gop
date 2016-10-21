@@ -2,5 +2,5 @@ This project based on Kaldi (https://github.com/kaldi-asr/kaldi).
 All the kaldi's codes in this project are under the Apache License, Version 2.0.
 You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
-However, the codes which have not merged into Kaldi's master branch are NOT under the same license of Kaldi.
+However, the codes which have not merged into Kaldi's master branch are NOT under the same license of Kaldi's.
 Those codes are NOT ALLOWED TO USE, COPY, DISTRIBUTE, OR MODIFY unless be permitted by the author.

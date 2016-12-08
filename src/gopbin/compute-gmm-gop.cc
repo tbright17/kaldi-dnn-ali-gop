@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
         "e.g.: \n"
         " compute-gmm-gop 1.mdl scp:test.scp ark:1.ali 1.gop\n";
     ParseOptions po(usage);
-
+    po.Read(argc, argv);
     if (po.NumArgs() != 4) {
       po.PrintUsage();
       exit(1);

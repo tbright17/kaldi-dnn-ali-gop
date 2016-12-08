@@ -4,7 +4,7 @@
 
 SHELL := /bin/bash
 
-SUBDIRS = base decoder fstext gmm gmmbin hmm matrix tree util gop gopbin
+SUBDIRS = base decoder fstext gmm hmm matrix tree util gop gopbin
 
 CUDAMEMTESTDIR = cudamatrix
 
@@ -137,7 +137,7 @@ $(EXT_SUBDIRS) : mklibdir
 # this is necessary for correct parallel compilation
 #1)The tools depend on all the libraries
 
-gmmbin gopbin: \
+gopbin: \
  base matrix util tree gmm fstext hmm decoder
 
 #2)The libraries have inter-dependencies

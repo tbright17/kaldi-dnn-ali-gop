@@ -21,16 +21,25 @@ namespace kaldi {
 
 class GmmGop {
  public:
-  GmmGop() { }
+  GmmGop(AmDiagGmm &am, TransitionModel &tm) : am_(am), tm_(tm) {}
 
-  void Compute(const AmDiagGmm &am,
-               const TransitionModel &tm,
-               const Matrix<BaseFloat> &feats,
+  void Compute(const Matrix<BaseFloat> &feats,
                const std::vector<int32> &align);
 
   void Write(std::ostream &os, bool binary) const;
   void Read(std::istream &in, bool binary);
+
+ protected:
+  AmDiagGmm &am_;
+  TransitionModel &tm_;
+
+  std::vector<BaseFloat> gop_result_;
+
+  BaseFloat ComputeGopNumera(std::vector<int32> &align_in_phone);
+  BaseFloat ComputeGopDenomin(std::vector<int32> &align_in_phone);
 };
+
+
 
 }  // End namespace kaldi
 

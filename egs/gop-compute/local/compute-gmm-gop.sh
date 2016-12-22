@@ -6,7 +6,7 @@
 
 
 # Begin configuration section.
-nj=4
+nj=1
 cmd=run.pl
 # Begin configuration.
 # End configuration options.
@@ -59,8 +59,8 @@ case $feat_type in
 esac
 
 # Convenience for debug
-$cmd JOB=1:$nj $dir/log/copyfeats.JOB.log  copy-feats "$feats" "ark,t:$dir/feats.JOB" || exit 1;
-$cmd JOB=1:$nj $dir/log/gunzip.JOB.log gunzip $alidir/ali.JOB.gz || exit 1;
+# $cmd JOB=1:$nj $dir/log/copyfeats.JOB.log  copy-feats "$feats" "ark,t:$dir/feats.JOB" || exit 1;
+# $cmd JOB=1:$nj $dir/log/gunzip.JOB.log gunzip $alidir/ali.JOB.gz || exit 1;
 
 echo "$0: computing GOP in $data using model from $srcdir, putting results in $dir"
 

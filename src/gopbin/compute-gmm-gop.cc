@@ -64,8 +64,8 @@ int main(int argc, char *argv[]) {
       }
       const std::vector<int32> &alignment = alignment_reader.Value(utt);
 
-      GmmGop gop;
-      gop.Compute(am_gmm, trans_model, features, alignment);
+      GmmGop gop(am_gmm, trans_model);
+      gop.Compute(features, alignment);
       WriteKaldiObject(gop, gop_out_filename, false);
     }
   

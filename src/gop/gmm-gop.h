@@ -35,11 +35,11 @@ class GmmGop {
 
   std::vector<BaseFloat> gop_result_;
 
-  BaseFloat ComputeGopNumera(std::vector<int32> &align_in_phone);
-  BaseFloat ComputeGopDenomin(std::vector<int32> &align_in_phone);
+  BaseFloat ComputeGopNumera(SubMatrix<BaseFloat> &feats_in_phone,
+                             std::vector<int32> &align_in_phone);
+  BaseFloat ComputeGopDenomin(SubMatrix<BaseFloat> &feats_in_phone,
+                              std::vector<int32> &align_in_phone);
 };
-
-
 
 }  // End namespace kaldi
 

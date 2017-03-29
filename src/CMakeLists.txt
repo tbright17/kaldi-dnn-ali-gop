@@ -4,7 +4,7 @@ project (kaldi-gop)
 SET(CMAKE_CXX_FLAGS "-std=c++0x")
 
 # Kaldi's path
-set(KALDI_ROOT /home/junbo/src/kaldi)
+set(KALDI_ROOT /home/junbo/src/kaldi)  # please edit this line
 
 #add_compile_options(-std=c++11)
 add_definitions(-DHAVE_ATLAS)

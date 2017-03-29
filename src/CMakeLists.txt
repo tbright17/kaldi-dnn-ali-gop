@@ -1,12 +1,11 @@
 cmake_minimum_required (VERSION 2.6)
 project (kaldi-gop)
 
-SET(CMAKE_CXX_FLAGS "-std=c++0x")
-
 # Kaldi's path
 set(KALDI_ROOT /home/junbo/src/kaldi)  # please edit this line
 
-#add_compile_options(-std=c++11)
+# Settings
+add_compile_options(-std=c++11)
 add_definitions(-DHAVE_ATLAS)
 include_directories("${KALDI_ROOT}/src")
 include_directories("${KALDI_ROOT}/tools/openfst/include")

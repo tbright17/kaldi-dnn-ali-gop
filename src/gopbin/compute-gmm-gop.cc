@@ -25,10 +25,12 @@ int main(int argc, char *argv[]) {
     
     const char *usage =
         "Compute GOP given [GMM-based] models.\n"
-        "Usage:   compute-gmm-gop [options] model-in feature-rspecifier alignments-rspecifier gop-out\n"
+        "Usage:   compute-gmm-gop [options] model-in feature-rspecifier alignments-rspecifier gop-wspecifier\n"
         "e.g.: \n"
-        " compute-gmm-gop 1.mdl scp:test.scp ark:1.ali 1.gop\n";
+        " compute-gmm-gop 1.mdl scp:test.scp ark:1.ali ark,t:1.gop\n";
+
     ParseOptions po(usage);
+
     po.Read(argc, argv);
     if (po.NumArgs() != 4) {
       po.PrintUsage();
@@ -38,7 +40,7 @@ int main(int argc, char *argv[]) {
     std::string model_in_filename = po.GetArg(1);
     std::string feature_rspecifier = po.GetArg(2);
     std::string alignment_rspecifier = po.GetArg(3);
-    std::string gop_out_filename = po.GetArg(4);
+    std::string gop_wspecifier = po.GetArg(4);
 
     // Load resources
     TransitionModel trans_model;
@@ -51,6 +53,7 @@ int main(int argc, char *argv[]) {
     }
     SequentialBaseFloatMatrixReader feature_reader(feature_rspecifier);
     RandomAccessInt32VectorReader alignment_reader(alignment_rspecifier);
+    BaseFloatVectorWriter gop_writer(gop_wspecifier);
 
     // Compute for each utterance
     int32 num_done = 0, num_err = 0, num_retry = 0;
@@ -66,7 +69,7 @@ int main(int argc, char *argv[]) {
 
       GmmGop gop(am_gmm, trans_model);
       gop.Compute(features, alignment);
-      WriteKaldiObject(gop, gop_out_filename, false);
+      gop_writer.Write(utt, gop.Result());
     }
   
 

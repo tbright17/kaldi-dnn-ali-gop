@@ -1,9 +1,6 @@
-#!/bin/bash
-# Copyright 2016  Author: Junbo Zhang
-# Apache 2.0
+#!/bin/sh
 
-# Computes GOP.
-
+# Copyright 2016-2017  Author: Junbo Zhang
 
 # Begin configuration section.
 nj=1
@@ -63,7 +60,7 @@ echo "$0: computing GOP in $data using model from $srcdir, putting results in $d
 mdl=$srcdir/final.mdl
 tra="ark:utils/sym2int.pl --map-oov $oov -f 2- $lang/words.txt $sdata/JOB/text|";
 $cmd JOB=1:$nj $dir/log/gop.JOB.log \
-  compute-gmm-gop $mdl "$feats" "ark:gunzip -c $alidir/ali.JOB.gz|" "ark:$dir/gop.JOB" || exit 1;
+  compute-gmm-gop $mdl "$feats" "ark:gunzip -c $alidir/ali.JOB.gz|" "ark,t:$dir/gop.JOB" || exit 1;
 
 # Convenience for debug
 # gunzip exp/eval_ali/ali.1.gz

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright 2016   Author: Junbo Zhang  <dr.jimbozhang@gmail.com>
+# Copyright 2016-2017   Author: Junbo Zhang  <dr.jimbozhang@gmail.com>
 
 set -e
 #set -x

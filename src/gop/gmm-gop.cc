@@ -1,6 +1,6 @@
 // gop/gop-gmm.cc
 
-// Copyright 2006  Junbo Zhang                    
+// Copyright 2016-2017  Junbo Zhang
 
 // This project based on Kaldi (https://github.com/kaldi-asr/kaldi).
 // All the Kaldi's codes in this project are under the Apache License, Version 2.0.

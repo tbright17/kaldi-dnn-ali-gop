@@ -58,15 +58,16 @@ case $feat_type in
   *) echo "$0: invalid feature type $feat_type" && exit 1;
 esac
 
-# Convenience for debug
-# $cmd JOB=1:$nj $dir/log/copyfeats.JOB.log  copy-feats "$feats" "ark,t:$dir/feats.JOB" || exit 1;
-# $cmd JOB=1:$nj $dir/log/gunzip.JOB.log gunzip $alidir/ali.JOB.gz || exit 1;
-
 echo "$0: computing GOP in $data using model from $srcdir, putting results in $dir"
 
 mdl=$srcdir/final.mdl
 tra="ark:utils/sym2int.pl --map-oov $oov -f 2- $lang/words.txt $sdata/JOB/text|";
 $cmd JOB=1:$nj $dir/log/gop.JOB.log \
-  compute-gmm-gop $mdl "ark,t:$dir/feats.JOB" "ark,t:$alidir/ali.JOB" $dir/gop.JOB || exit 1;
+  compute-gmm-gop $mdl "$feats" "ark:gunzip -c $alidir/ali.JOB.gz|" "$dir/gop.JOB" || exit 1;
+
+# Convenience for debug
+# gunzip exp/eval_ali/ali.1.gz
+# apply-cmvn --utt2spk=ark:data/eval/split1/1/utt2spk scp:data/eval/split1/1/cmvn.scp scp:data/eval/split1/1/feats.scp ark:- | add-deltas ark:- ark,t:data/eval/feats.1.ark.txt
+# compute-gmm-gop exp/tri1/final.mdl ark,t:data/eval/feats.1.ark.txt ark,t:exp/eval_ali/ali.1 exp/eval_gop/gop.1
 
 echo "$0: done computing GOP."

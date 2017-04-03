@@ -15,41 +15,107 @@
 #include <limits>
 #include <string>
 #include <vector>
-#include "hmm/hmm-utils.h"
+#include "base/kaldi-common.h"
+#include "util/common-utils.h"
+#include "gmm/am-diag-gmm.h"
+#include "hmm/transition-model.h"
+#include "fstext/fstext-utils.h"
+#include "decoder/decoder-wrappers.h"
 #include "gmm/decodable-am-diag-gmm.h"
+#include "lat/kaldi-lattice.h"
+#include "hmm/hmm-utils.h"
+#include "decoder/faster-decoder.h"
 #include "gop/gmm-gop.h"
 
 namespace kaldi {
 
-BaseFloat GmmGop::ComputeGopNumera(SubMatrix<BaseFloat> &feats_in_phone,
+void GmmGop::Init(std::string &tree_in_filename,
+            std::string &model_in_filename,
+            std::string &lex_in_filename) {
+  bool binary;
+  Input ki(model_in_filename, &binary);
+  tm_.Read(ki.Stream(), binary);
+  am_.Read(ki.Stream(), binary);
+
+  fst::VectorFst<fst::StdArc> *lex_fst_ = fst::ReadFstKaldi(lex_in_filename);
+  ReadKaldiObject(tree_in_filename, &ctx_dep_);
+  TrainingGraphCompilerOptions gopts;
+  std::vector<int32> disambig_syms;
+  gc_ = new TrainingGraphCompiler(tm_, ctx_dep_, lex_fst_, disambig_syms, gopts);
+}
+
+BaseFloat GmmGop::ComputeGopNumera(DecodableAmDiagGmmScaled &decodable,
                                    std::vector<int32> &align_in_phone) {
   int32 num_repeats = align_in_phone.size();
-  KALDI_ASSERT(feats_in_phone.NumRows() == num_repeats);
-  const Matrix<BaseFloat> features(feats_in_phone);
-  DecodableAmDiagGmmScaled gmm_decodable(am_, tm_, features, 1.0);
-
   BaseFloat likelihood = 0;
-  for (int32 frame=0; frame<num_repeats; frame++) {
-    likelihood += gmm_decodable.LogLikelihood(frame, align_in_phone[frame]);
+  for (MatrixIndexT frame=0; frame<num_repeats; frame++) {
+    likelihood += decodable.LogLikelihood(frame, align_in_phone[frame]);
   }
   likelihood /= num_repeats;
 
   return likelihood;
 }
 
-BaseFloat GmmGop::ComputeGopDenomin(SubMatrix<BaseFloat> &feats_in_phone,
+BaseFloat GmmGop::ComputeGopDenomin(DecodableAmDiagGmmScaled &decodable,
                                     std::vector<int32> &align_in_phone) {
-  // int32 phone = tm_.TransitionIdToPhone(align_in_phone[0]);
-  int32 num_repeats = align_in_phone.size();
-  KALDI_ASSERT(feats_in_phone.NumRows() == num_repeats);
+  using fst::SymbolTable;
+  using fst::VectorFst;
+  using fst::StdArc;
 
+  int32 num_repeats = align_in_phone.size();
+
+  // int32 phone = tm_.TransitionIdToPhone(align_in_phone[0]);
   return 1.0;
+
+  VectorFst<StdArc> fst;
+  FasterDecoderOptions decode_opts;
+  FasterDecoder decoder(fst, decode_opts);
+  decoder.Decode(&decodable);
+  if (! decoder.ReachedFinal()) {
+    KALDI_ERR << "Did not successfully decode " << ", len = " << decodable.NumFramesReady();
+  }
+  fst::VectorFst<LatticeArc> decoded;
+  decoder.GetBestPath(&decoded);
+  std::vector<int32> alignment;
+  std::vector<int32> words;
+  LatticeWeight weight;
+  GetLinearSymbolSequence(decoded, &alignment, &words, &weight);
+  BaseFloat like = -(weight.Value1()+weight.Value2());
+
+  return like;
+}
+
+void GmmGop::AlignUtterance(fst::VectorFst<fst::StdArc> *fst,
+                            DecodableInterface *decodable,
+                            std::vector<int32> *align) {
+  FasterDecoderOptions decode_opts;
+  // decode_opts.beam = 40.0;
+  FasterDecoder decoder(*fst, decode_opts);
+  decoder.Decode(decodable);
+  bool ans = decoder.ReachedFinal();
+  if (!ans) {
+    KALDI_WARN << "Did not successfully decode file ";
+  }
+  fst::VectorFst<LatticeArc> decoded;
+  decoder.GetBestPath(&decoded);
+  std::vector<int32> words;
+  LatticeWeight weight;
+  GetLinearSymbolSequence(decoded, align, &words, &weight);
 }
 
 void GmmGop::Compute(const Matrix<BaseFloat> &feats,
-                     const std::vector<int32> &align) {
+                     const std::vector<int32> &transcript) {
+  // Align
+  fst::VectorFst<fst::StdArc> ali_fst;
+  if (! gc_->CompileGraphFromText(transcript, &ali_fst)) {
+    KALDI_ERR << "Problem creating decoding graph for utterance ";
+  }
+  DecodableAmDiagGmmScaled ali_decodable(am_, tm_, feats, 1.0);
+  std::vector<int32> align;
+  AlignUtterance(&ali_fst, &ali_decodable, &align);
   KALDI_ASSERT(feats.NumRows() == align.size());
 
+  // GOP
   std::vector<std::vector<int32> > split;
   SplitToPhones(tm_, align, &split);
   gop_result_.Resize(split.size());
@@ -57,8 +123,11 @@ void GmmGop::Compute(const Matrix<BaseFloat> &feats,
   for (MatrixIndexT i = 0; i < split.size(); i++) {
     SubMatrix<BaseFloat> feats_in_phone = feats.Range(frame_start_idx, split[i].size(),
                                                       0, feats.NumCols());
-    BaseFloat gop_numerator = ComputeGopNumera(feats_in_phone, split[i]);
-    BaseFloat gop_denominator = ComputeGopDenomin(feats_in_phone, split[i]);
+    const Matrix<BaseFloat> features(feats_in_phone);
+    DecodableAmDiagGmmScaled gmm_decodable(am_, tm_, features, 1.0);
+
+    BaseFloat gop_numerator = ComputeGopNumera(gmm_decodable, split[i]);
+    BaseFloat gop_denominator = ComputeGopDenomin(gmm_decodable, split[i]);
     gop_result_(i) = gop_numerator - gop_denominator;
 
     frame_start_idx += split[i].size();

@@ -14,26 +14,39 @@
 #ifndef KALDI_GOP_GMM_H_
 #define KALDI_GOP_GMM_H_ 1
 
+#include "base/kaldi-common.h"
+#include "util/common-utils.h"
 #include "gmm/am-diag-gmm.h"
+#include "decoder/training-graph-compiler.h"
+#include "gmm/decodable-am-diag-gmm.h"
 #include "hmm/transition-model.h"
+#include "fstext/fstext-utils.h"
 
 namespace kaldi {
 
 class GmmGop {
- public:
-  GmmGop(AmDiagGmm &am, TransitionModel &tm) : am_(am), tm_(tm) {}
-  void Compute(const Matrix<BaseFloat> &feats, const std::vector<int32> &align);
+public:
+  GmmGop() {}
+  void Init(std::string &tree_in_filename,
+            std::string &model_in_filename,
+            std::string &lex_in_filename);
+  void Compute(const Matrix<BaseFloat> &feats, const std::vector<int32> &transcript);
   Vector<BaseFloat>& Result();
 
- protected:
-  AmDiagGmm &am_;
-  TransitionModel &tm_;
-
+protected:
+  AmDiagGmm am_;
+  TransitionModel tm_;
+  ContextDependency ctx_dep_;
+  TrainingGraphCompiler *gc_;
   Vector<BaseFloat> gop_result_;
 
-  BaseFloat ComputeGopNumera(SubMatrix<BaseFloat> &feats_in_phone,
+  void AlignUtterance(fst::VectorFst<fst::StdArc> *fst,
+                      DecodableInterface *decodable,
+                      std::vector<int32> *align);
+
+  BaseFloat ComputeGopNumera(DecodableAmDiagGmmScaled &decodable,
                              std::vector<int32> &align_in_phone);
-  BaseFloat ComputeGopDenomin(SubMatrix<BaseFloat> &feats_in_phone,
+  BaseFloat ComputeGopDenomin(DecodableAmDiagGmmScaled &decodable,
                               std::vector<int32> &align_in_phone);
 };
 

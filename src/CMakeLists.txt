@@ -7,6 +7,7 @@ set(KALDI_ROOT /home/junbo/src/kaldi)  # please edit this line
 # Settings
 add_compile_options(-std=c++11)
 add_definitions(-DHAVE_ATLAS)
+add_definitions(-Wno-deprecated-declarations)
 include_directories("${KALDI_ROOT}/src")
 include_directories("${KALDI_ROOT}/tools/openfst/include")
 include_directories("${KALDI_ROOT}/tools/ATLAS/include")

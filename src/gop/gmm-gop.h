@@ -20,6 +20,7 @@
 #include "decoder/training-graph-compiler.h"
 #include "gmm/decodable-am-diag-gmm.h"
 #include "hmm/transition-model.h"
+#include "decoder/faster-decoder.h"
 #include "fstext/fstext-utils.h"
 
 namespace kaldi {
@@ -39,6 +40,7 @@ protected:
   ContextDependency ctx_dep_;
   TrainingGraphCompiler *gc_;
   Vector<BaseFloat> gop_result_;
+  FasterDecoderOptions decode_opts_;
 
   void AlignUtterance(fst::VectorFst<fst::StdArc> *fst,
                       DecodableInterface *decodable,

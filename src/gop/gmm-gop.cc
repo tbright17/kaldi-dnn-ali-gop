@@ -24,7 +24,6 @@
 #include "gmm/decodable-am-diag-gmm.h"
 #include "lat/kaldi-lattice.h"
 #include "hmm/hmm-utils.h"
-#include "decoder/faster-decoder.h"
 #include "gop/gmm-gop.h"
 
 namespace kaldi {
@@ -36,12 +35,12 @@ void GmmGop::Init(std::string &tree_in_filename,
   Input ki(model_in_filename, &binary);
   tm_.Read(ki.Stream(), binary);
   am_.Read(ki.Stream(), binary);
-
   fst::VectorFst<fst::StdArc> *lex_fst_ = fst::ReadFstKaldi(lex_in_filename);
   ReadKaldiObject(tree_in_filename, &ctx_dep_);
   TrainingGraphCompilerOptions gopts;
   std::vector<int32> disambig_syms;
   gc_ = new TrainingGraphCompiler(tm_, ctx_dep_, lex_fst_, disambig_syms, gopts);
+  decode_opts_.beam = 200;
 }
 
 BaseFloat GmmGop::ComputeGopNumera(DecodableAmDiagGmmScaled &decodable,
@@ -88,9 +87,7 @@ BaseFloat GmmGop::ComputeGopDenomin(DecodableAmDiagGmmScaled &decodable,
 void GmmGop::AlignUtterance(fst::VectorFst<fst::StdArc> *fst,
                             DecodableInterface *decodable,
                             std::vector<int32> *align) {
-  FasterDecoderOptions decode_opts;
-  // decode_opts.beam = 40.0;
-  FasterDecoder decoder(*fst, decode_opts);
+  FasterDecoder decoder(*fst, decode_opts_);
   decoder.Decode(decodable);
   bool ans = decoder.ReachedFinal();
   if (!ans) {

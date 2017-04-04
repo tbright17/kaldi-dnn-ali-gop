@@ -5,6 +5,6 @@ egs/gop-compute/data
 egs/gop-compute/exp
 egs/gop-compute/conf
 egs/gop-compute/input
-egs/gop-compute/local
 egs/gop-compute/waves_yesno
 egs/gop-compute/*.gz
+*.1

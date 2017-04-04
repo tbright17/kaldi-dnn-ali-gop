@@ -13,9 +13,9 @@ echo "$0 $@"  # Print the command line for logging
 [ -f path.sh ] && . ./path.sh # source the path.
 . parse_options.sh || exit 1;
 
-if [ $# != 5 ]; then
-   echo "usage: local/compute-gmm-gop.sh <data-dir> <lang-dir> <src-dir> <ali-dir> <gop-dir>"
-   echo "e.g.:  local/compute-gmm-gop.sh data/train data/lang exp/tri1 exp/tri1_ali exp/tri1_gop"
+if [ $# != 4 ]; then
+   echo "usage: local/compute-gmm-gop.sh <data-dir> <lang-dir> <src-dir> <gop-dir>"
+   echo "e.g.:  local/compute-gmm-gop.sh data/train data/lang exp/tri1 exp/tri1_gop"
    echo "main options (for others, see top of script file)"
    echo "  --config <config-file>                           # config containing options"
    echo "  --nj <nj>                                        # number of parallel jobs"
@@ -26,8 +26,7 @@ fi
 data=$1
 lang=$2
 srcdir=$3
-alidir=$4
-dir=$5
+dir=$4
 
 for f in $data/text $lang/oov.int $srcdir/tree $srcdir/final.mdl; do
   [ ! -f $f ] && echo "$0: expected file $f to exist" && exit 1;
@@ -40,9 +39,19 @@ sdata=$data/split$nj
 splice_opts=`cat $srcdir/splice_opts 2>/dev/null` # frame-splicing options.
 cp $srcdir/splice_opts $dir 2>/dev/null # frame-splicing options.
 cmvn_opts=`cat $srcdir/cmvn_opts 2>/dev/null`
+cp $srcdir/cmvn_opts $dir 2>/dev/null # cmn/cmvn option.
 delta_opts=`cat $srcdir/delta_opts 2>/dev/null`
+cp $srcdir/delta_opts $dir 2>/dev/null
 
 [[ -d $sdata && $data/feats.scp -ot $sdata ]] || split_data.sh $data $nj || exit 1;
+
+utils/lang/check_phones_compatible.sh $lang/phones.txt $srcdir/phones.txt || exit 1;
+cp $lang/phones.txt $dir || exit 1;
+
+cp $srcdir/{tree,final.mdl} $dir || exit 1;
+cp $srcdir/final.occs $dir;
+
+
 
 if [ -f $srcdir/final.mat ]; then feat_type=lda; else feat_type=delta; fi
 echo "$0: feature type is $feat_type"
@@ -60,11 +69,11 @@ echo "$0: computing GOP in $data using model from $srcdir, putting results in $d
 mdl=$srcdir/final.mdl
 tra="ark:utils/sym2int.pl --map-oov $oov -f 2- $lang/words.txt $sdata/JOB/text|";
 $cmd JOB=1:$nj $dir/log/gop.JOB.log \
-  compute-gmm-gop $mdl "$feats" "ark:gunzip -c $alidir/ali.JOB.gz|" "ark,t:$dir/gop.JOB" || exit 1;
+  compute-gmm-gop $dir/tree $dir/final.mdl $lang/L.fst "$feats" "$tra" "ark,t:$dir/gop.JOB" || exit 1;
 
 # Convenience for debug
-# gunzip exp/eval_ali/ali.1.gz
 # apply-cmvn --utt2spk=ark:data/eval/split1/1/utt2spk scp:data/eval/split1/1/cmvn.scp scp:data/eval/split1/1/feats.scp ark:- | add-deltas ark:- ark,t:data/eval/feats.1.ark.txt
-# compute-gmm-gop exp/tri1/final.mdl ark,t:data/eval/feats.1.ark.txt ark,t:exp/eval_ali/ali.1 ark,t:exp/eval_gop/gop.1
+# utils/sym2int.pl --map-oov `cat data/lang/oov.int` -f 2- data/lang/words.txt data/eval/text > data/eval/trans
+# compute-gmm-gop exp/tri1/tree exp/tri1/final.mdl data/lang/L.fst ark,t:data/eval/feats.1.ark.txt ark,t:data/eval/trans ark,t:gop.1
 
 echo "$0: done computing GOP."

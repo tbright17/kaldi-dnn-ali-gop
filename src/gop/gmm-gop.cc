@@ -50,9 +50,26 @@ BaseFloat GmmGop::ComputeGopNumera(DecodableAmDiagGmmScaled &decodable,
   for (MatrixIndexT frame=0; frame<num_repeats; frame++) {
     likelihood += decodable.LogLikelihood(frame, align_in_phone[frame]);
   }
-  likelihood /= num_repeats;
 
-  return likelihood;
+  return likelihood / num_repeats;
+}
+
+void GmmGop::MakePhoneLoopAcceptor(fst::VectorFst<fst::StdArc> *ofst) {
+  // TODO: make acceptor according phone contexts
+  typedef typename fst::StdArc Arc;
+  typedef typename Arc::StateId StateId;
+  typedef typename Arc::Weight Weight;
+
+  ofst->DeleteStates();
+  StateId start_state = ofst->AddState();
+  ofst->SetStart(start_state);
+  const std::vector<int32> &phone_syms = tm_.GetPhones();
+  for (size_t i = 0; i < phone_syms.size(); i++) {
+    StateId next_state = ofst->AddState();
+    Arc arc_phone(phone_syms[i], phone_syms[i], Weight::One(), next_state);
+    ofst->AddArc(start_state, arc_phone);
+  }
+  ofst->SetFinal(start_state, Weight::One());
 }
 
 BaseFloat GmmGop::ComputeGopDenomin(DecodableAmDiagGmmScaled &decodable,
@@ -61,12 +78,13 @@ BaseFloat GmmGop::ComputeGopDenomin(DecodableAmDiagGmmScaled &decodable,
   using fst::VectorFst;
   using fst::StdArc;
 
-  int32 num_repeats = align_in_phone.size();
-
-  // int32 phone = tm_.TransitionIdToPhone(align_in_phone[0]);
-  return 1.0;
-
+  // Make phone loop graph
+  // TODO: use cross-word tri-phone instead
+  VectorFst<StdArc> phoneloop_fst;
+  MakePhoneLoopAcceptor(&phoneloop_fst);
   VectorFst<StdArc> fst;
+  gc_->CompileGraph(phoneloop_fst, &fst);
+
   FasterDecoderOptions decode_opts;
   FasterDecoder decoder(fst, decode_opts);
   decoder.Decode(&decodable);
@@ -79,9 +97,9 @@ BaseFloat GmmGop::ComputeGopDenomin(DecodableAmDiagGmmScaled &decodable,
   std::vector<int32> words;
   LatticeWeight weight;
   GetLinearSymbolSequence(decoded, &alignment, &words, &weight);
-  BaseFloat like = -(weight.Value1()+weight.Value2());
+  BaseFloat likelihood = -(weight.Value1()+weight.Value2());
 
-  return like;
+  return likelihood / align_in_phone.size();
 }
 
 void GmmGop::AlignUtterance(fst::VectorFst<fst::StdArc> *fst,

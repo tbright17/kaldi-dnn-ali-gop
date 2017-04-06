@@ -46,6 +46,8 @@ protected:
                       DecodableInterface *decodable,
                       std::vector<int32> *align);
 
+  void MakePhoneLoopAcceptor(fst::VectorFst<fst::StdArc> *ofst);
+
   BaseFloat ComputeGopNumera(DecodableAmDiagGmmScaled &decodable,
                              std::vector<int32> &align_in_phone);
   BaseFloat ComputeGopDenomin(DecodableAmDiagGmmScaled &decodable,

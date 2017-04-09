@@ -37,12 +37,9 @@ public:
 protected:
   AmDiagGmm am_;
   TransitionModel tm_;
-  fst::VectorFst<fst::StdArc> *lex_fst_;
   ContextDependency ctx_dep_;
-  std::vector<int32> disambig_syms_;
   Vector<BaseFloat> gop_result_;
   FasterDecoderOptions decode_opts_;
-  TrainingGraphCompilerOptions gopts_;
   TrainingGraphCompiler *gc_;
 
   void MakePhoneLoopAcceptor(std::vector<int32> &labels,

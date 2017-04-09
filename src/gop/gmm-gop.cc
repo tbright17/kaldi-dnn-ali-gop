@@ -39,9 +39,12 @@ void GmmGop::Init(std::string &tree_in_filename,
   Input ki(model_in_filename, &binary);
   tm_.Read(ki.Stream(), binary);
   am_.Read(ki.Stream(), binary);
-  lex_fst_ = fst::ReadFstKaldi(lex_in_filename);
   ReadKaldiObject(tree_in_filename, &ctx_dep_);
-  gc_ = new TrainingGraphCompiler(tm_, ctx_dep_, lex_fst_, disambig_syms_, gopts_);
+
+  fst::VectorFst<fst::StdArc> *lex_fst = fst::ReadFstKaldi(lex_in_filename);
+  std::vector<int32> disambig_syms;  
+  TrainingGraphCompilerOptions gopts;
+  gc_ = new TrainingGraphCompiler(tm_, ctx_dep_, lex_fst, disambig_syms, gopts);
 
   decode_opts_.beam = 200;
 }

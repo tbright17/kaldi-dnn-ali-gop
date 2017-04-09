@@ -35,28 +35,79 @@ void GmmGop::Init(std::string &tree_in_filename,
   Input ki(model_in_filename, &binary);
   tm_.Read(ki.Stream(), binary);
   am_.Read(ki.Stream(), binary);
-  fst::VectorFst<fst::StdArc> *lex_fst_ = fst::ReadFstKaldi(lex_in_filename);
+  lex_fst_ = fst::ReadFstKaldi(lex_in_filename);
   ReadKaldiObject(tree_in_filename, &ctx_dep_);
-  TrainingGraphCompilerOptions gopts;
-  std::vector<int32> disambig_syms;
-  gc_ = new TrainingGraphCompiler(tm_, ctx_dep_, lex_fst_, disambig_syms, gopts);
+
   decode_opts_.beam = 200;
 }
 
-void GmmGop::AlignUtterance(fst::VectorFst<fst::StdArc> *fst,
-                            DecodableInterface *decodable,
-                            std::vector<int32> *align) {
-  FasterDecoder decoder(*fst, decode_opts_);
-  decoder.Decode(decodable);
-  bool ans = decoder.ReachedFinal();
-  if (!ans) {
-    KALDI_WARN << "Did not successfully decode file ";
+bool GmmGop::CompileGraph(const fst::VectorFst<fst::StdArc> &phone2word_fst,
+                          fst::VectorFst<fst::StdArc> *out_fst) {
+  using namespace fst;
+
+  KALDI_ASSERT(phone2word_fst.Start() != kNoStateId);
+
+  ContextFst<StdArc> *cfst = NULL;
+  {  // make cfst [ it's expanded on the fly ]
+    const std::vector<int32> &phone_syms = tm_.GetPhones();  // needed to create context fst.
+    int32 subseq_symbol = phone_syms.back() + 1;
+    if (!disambig_syms_.empty() && subseq_symbol <= disambig_syms_.back())
+      subseq_symbol = 1 + disambig_syms_.back();
+
+    cfst = new ContextFst<StdArc>(subseq_symbol,
+                                  phone_syms,
+                                  disambig_syms_,
+                                  ctx_dep_.ContextWidth(),
+                                  ctx_dep_.CentralPosition());
   }
-  fst::VectorFst<LatticeArc> decoded;
-  decoder.GetBestPath(&decoded);
-  std::vector<int32> words;
-  LatticeWeight weight;
-  GetLinearSymbolSequence(decoded, align, &words, &weight);
+
+  VectorFst<StdArc> ctx2word_fst;
+  ComposeContextFst(*cfst, phone2word_fst, &ctx2word_fst);
+  // ComposeContextFst is like Compose but faster for this particular Fst type.
+  // [and doesn't expand too many arcs in the ContextFst.]
+
+  KALDI_ASSERT(ctx2word_fst.Start() != kNoStateId);
+
+  HTransducerConfig h_cfg;
+  h_cfg.transition_scale = gopts_.transition_scale;
+
+  std::vector<int32> disambig_syms_h; // disambiguation symbols on
+  // input side of H.
+  VectorFst<StdArc> *H = GetHTransducer(cfst->ILabelInfo(),
+                                        ctx_dep_,
+                                        tm_,
+                                        h_cfg,
+                                        &disambig_syms_h);
+
+  VectorFst<StdArc> &trans2word_fst = *out_fst;  // transition-id to word.
+  TableCompose(*H, ctx2word_fst, &trans2word_fst);
+
+  KALDI_ASSERT(trans2word_fst.Start() != kNoStateId);
+
+  // Epsilon-removal and determinization combined. This will fail if not determinizable.
+  DeterminizeStarInLog(&trans2word_fst);
+
+  if (!disambig_syms_h.empty()) {
+    RemoveSomeInputSymbols(disambig_syms_h, &trans2word_fst);
+    // we elect not to remove epsilons after this phase, as it is
+    // a little slow.
+    if (gopts_.rm_eps)
+      RemoveEpsLocal(&trans2word_fst);
+  }
+
+  // Encoded minimization.
+  MinimizeEncoded(&trans2word_fst);
+
+  std::vector<int32> disambig;
+  AddSelfLoops(tm_,
+               disambig,
+               gopts_.self_loop_scale,
+               gopts_.reorder,
+               &trans2word_fst);
+
+  delete H;
+  delete cfst;
+  return true;
 }
 
 void GmmGop::MakePhoneLoopAcceptor(std::vector<int32> &labels,
@@ -78,23 +129,20 @@ void GmmGop::MakePhoneLoopAcceptor(std::vector<int32> &labels,
   ofst->SetFinal(start_state, Weight::One());
 }
 
-BaseFloat GmmGop::ComputeDecodeLikelihood(DecodableAmDiagGmmScaled &decodable,
-                                          fst::VectorFst<fst::StdArc> &fst_g) {
-  fst::VectorFst<fst::StdArc> fst;
-  gc_->CompileGraph(fst_g, &fst);
-
+BaseFloat GmmGop::Decode(fst::VectorFst<fst::StdArc> &fst,
+                         DecodableAmDiagGmmScaled &decodable,
+                         std::vector<int32> *align) {
   FasterDecoderOptions decode_opts;
   FasterDecoder decoder(fst, decode_opts);
   decoder.Decode(&decodable);
   if (! decoder.ReachedFinal()) {
-    KALDI_WARN << "Did not successfully decode for fst.";
+    KALDI_WARN << "Did not successfully decode.";
   }
   fst::VectorFst<LatticeArc> decoded;
   decoder.GetBestPath(&decoded);
-  std::vector<int32> alignment;
-  std::vector<int32> words;
+  std::vector<int32> osymbols;
   LatticeWeight weight;
-  GetLinearSymbolSequence(decoded, &alignment, &words, &weight);
+  GetLinearSymbolSequence(decoded, align, &osymbols, &weight);
   BaseFloat likelihood = -(weight.Value1()+weight.Value2());
 
   return likelihood;
@@ -117,7 +165,9 @@ BaseFloat GmmGop::ComputeGopNumeraViterbi(DecodableAmDiagGmmScaled &decodable,
                                           std::vector<int32> &align_in_phone) {
   fst::VectorFst<fst::StdArc> phonelinear_fst;
   MakeLinearAcceptor(align_in_phone, &phonelinear_fst);
-  BaseFloat likelihood = ComputeDecodeLikelihood(decodable, phonelinear_fst);
+  fst::VectorFst<fst::StdArc> fst;
+  CompileGraph(phonelinear_fst, &fst);
+  BaseFloat likelihood = Decode(fst, decodable);
 
   return likelihood / align_in_phone.size();
 }
@@ -126,7 +176,9 @@ BaseFloat GmmGop::ComputeGopDenomin(DecodableAmDiagGmmScaled &decodable,
                                     std::vector<int32> &align_in_phone) {
   fst::VectorFst<fst::StdArc> phoneloop_fst;
   MakePhoneLoopAcceptor(align_in_phone, &phoneloop_fst);
-  BaseFloat likelihood = ComputeDecodeLikelihood(decodable, phoneloop_fst);
+  fst::VectorFst<fst::StdArc> fst;
+  CompileGraph(phoneloop_fst, &fst);
+  BaseFloat likelihood = Decode(fst, decodable);
 
   return likelihood / align_in_phone.size();
 }
@@ -135,12 +187,11 @@ void GmmGop::Compute(const Matrix<BaseFloat> &feats,
                      const std::vector<int32> &transcript) {
   // Align
   fst::VectorFst<fst::StdArc> ali_fst;
-  if (! gc_->CompileGraphFromText(transcript, &ali_fst)) {
-    KALDI_ERR << "Problem creating decoding graph for utterance ";
-  }
+  TrainingGraphCompiler gc(tm_, ctx_dep_, lex_fst_, disambig_syms_, gopts_);
+  gc.CompileGraphFromText(transcript, &ali_fst);
   DecodableAmDiagGmmScaled ali_decodable(am_, tm_, feats, 1.0);
   std::vector<int32> align;
-  AlignUtterance(&ali_fst, &ali_decodable, &align);
+  Decode(ali_fst, ali_decodable, &align);
   KALDI_ASSERT(feats.NumRows() == align.size());
 
   // GOP
@@ -154,17 +205,18 @@ void GmmGop::Compute(const Matrix<BaseFloat> &feats,
     const Matrix<BaseFloat> features(feats_in_phone);
     DecodableAmDiagGmmScaled gmm_decodable(am_, tm_, features, 1.0);
 
-    bool use_viterbi_numera = false;
+    bool use_viterbi_numera = true;
     BaseFloat gop_numerator = use_viterbi_numera ?
                                 ComputeGopNumeraViterbi(gmm_decodable, split[i]):
                                 ComputeGopNumera(ali_decodable, align,
                                                  frame_start_idx, split[i].size());
-    BaseFloat gop_denominator = 0; //ComputeGopDenomin(gmm_decodable, split[i]);
+    BaseFloat gop_denominator = ComputeGopDenomin(gmm_decodable, split[i]);
     gop_result_(i) = gop_numerator - gop_denominator;
 
     frame_start_idx += split[i].size();
   }
 }
+
 Vector<BaseFloat>& GmmGop::Result() {
   return gop_result_;
 }

@@ -37,18 +37,20 @@ public:
 protected:
   AmDiagGmm am_;
   TransitionModel tm_;
+  fst::VectorFst<fst::StdArc> *lex_fst_;
   ContextDependency ctx_dep_;
-  TrainingGraphCompiler *gc_;
+  std::vector<int32> disambig_syms_;
   Vector<BaseFloat> gop_result_;
   FasterDecoderOptions decode_opts_;
+  TrainingGraphCompilerOptions gopts_;
 
-  void AlignUtterance(fst::VectorFst<fst::StdArc> *fst,
-                      DecodableInterface *decodable,
-                      std::vector<int32> *align);
   void MakePhoneLoopAcceptor(std::vector<int32> &labels,
                              fst::VectorFst<fst::StdArc> *ofst);
-  BaseFloat ComputeDecodeLikelihood(DecodableAmDiagGmmScaled &decodable,
-                                    fst::VectorFst<fst::StdArc> &fst_g);
+  bool CompileGraph(const fst::VectorFst<fst::StdArc> &phone2word_fst,
+                    fst::VectorFst<fst::StdArc> *out_fst);
+  BaseFloat Decode(fst::VectorFst<fst::StdArc> &fst,
+                   DecodableAmDiagGmmScaled &decodable,
+                   std::vector<int32> *align = NULL);
   BaseFloat ComputeGopNumera(DecodableAmDiagGmmScaled &decodable,
                              std::vector<int32> &align,
                              MatrixIndexT start_frame,

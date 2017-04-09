@@ -1,16 +1,17 @@
+
 # kaldi-gop
 This project computes GOP (Goodness of Pronunciation) bases on Kaldi.
 
 ## How to build
-* Download the code of [Kaldi](http://www.kaldi-asr.org), and build it.
-    Note that do not use "--shared" option when building kaldi.
-* Compile the binary
+1. Download and complile [Kaldi](http://www.kaldi-asr.org). Note that do not use the "--shared" option.
+1. Edit src/CMakeLists.txt to set the variable $KALDI_ROOT.
+1. Compile the binary:
 ```
 cd src/
 mkdir build && cd build
 cmake .. && make
 ```
-* Run the example
+## Run the example
 ```
 cd egs/gop-compute
 ./run.sh

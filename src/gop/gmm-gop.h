@@ -38,10 +38,9 @@ protected:
   AmDiagGmm am_;
   TransitionModel tm_;
   ContextDependency ctx_dep_;
-  Vector<BaseFloat> gop_result_;
-  FasterDecoderOptions decode_opts_;
   TrainingGraphCompiler *gc_;
   std::map<int32, int32> pdfid_to_tid;
+  Vector<BaseFloat> gop_result_;
 
   void MakePhoneLoopAcceptor(std::vector<int32> &labels,
                              fst::VectorFst<fst::StdArc> *ofst);
@@ -53,11 +52,11 @@ protected:
                              MatrixIndexT start_frame,
                              int32 size);
   BaseFloat ComputeGopNumeraViterbi(DecodableAmDiagGmmScaled &decodable,
-                                    std::vector<int32> &align_in_phone);
+                                    int32 phone_l, int32 phone, int32 phone_r);
   BaseFloat ComputeGopDenomin(DecodableAmDiagGmmScaled &decodable,
                               int32 phone_l, int32 phone_r);
   void GetContextFromSplit(std::vector<std::vector<int32> > split,
-                           int32 index, int32 &phone_l, int32 &phone_r);
+                           int32 index, int32 &phone_l, int32 &phone, int32 &phone_r);
 };
 
 }  // End namespace kaldi

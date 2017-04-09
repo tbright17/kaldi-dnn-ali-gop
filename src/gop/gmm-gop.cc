@@ -28,6 +28,10 @@
 
 namespace kaldi {
 
+typedef typename fst::StdArc Arc;
+typedef typename Arc::StateId StateId;
+typedef typename Arc::Weight Weight;
+
 void GmmGop::Init(std::string &tree_in_filename,
             std::string &model_in_filename,
             std::string &lex_in_filename) {
@@ -37,6 +41,7 @@ void GmmGop::Init(std::string &tree_in_filename,
   am_.Read(ki.Stream(), binary);
   lex_fst_ = fst::ReadFstKaldi(lex_in_filename);
   ReadKaldiObject(tree_in_filename, &ctx_dep_);
+  gc_ = new TrainingGraphCompiler(tm_, ctx_dep_, lex_fst_, disambig_syms_, gopts_);
 
   decode_opts_.beam = 200;
 }
@@ -113,10 +118,6 @@ bool GmmGop::CompileGraph(const fst::VectorFst<fst::StdArc> &phone2word_fst,
 void GmmGop::MakePhoneLoopAcceptor(std::vector<int32> &labels,
                                    fst::VectorFst<fst::StdArc> *ofst) {
   // TODO: make acceptor according phone contexts
-  typedef typename fst::StdArc Arc;
-  typedef typename Arc::StateId StateId;
-  typedef typename Arc::Weight Weight;
-
   ofst->DeleteStates();
   StateId start_state = ofst->AddState();
   ofst->SetStart(start_state);
@@ -163,10 +164,16 @@ BaseFloat GmmGop::ComputeGopNumera(DecodableAmDiagGmmScaled &decodable,
 
 BaseFloat GmmGop::ComputeGopNumeraViterbi(DecodableAmDiagGmmScaled &decodable,
                                           std::vector<int32> &align_in_phone) {
-  fst::VectorFst<fst::StdArc> phonelinear_fst;
-  MakeLinearAcceptor(align_in_phone, &phonelinear_fst);
   fst::VectorFst<fst::StdArc> fst;
-  CompileGraph(phonelinear_fst, &fst);
+  StateId cur_state = fst.AddState();
+  fst.SetStart(cur_state);
+  for (size_t i = 0; i < align_in_phone.size(); i++) {
+    StateId next_state = fst.AddState();
+    Arc arc(align_in_phone[i], 0, Weight::One(), next_state);
+    fst.AddArc(cur_state, arc);
+    cur_state = next_state;
+  }
+  fst.SetFinal(cur_state, Weight::One());
   BaseFloat likelihood = Decode(fst, decodable);
 
   return likelihood / align_in_phone.size();
@@ -174,6 +181,7 @@ BaseFloat GmmGop::ComputeGopNumeraViterbi(DecodableAmDiagGmmScaled &decodable,
 
 BaseFloat GmmGop::ComputeGopDenomin(DecodableAmDiagGmmScaled &decodable,
                                     std::vector<int32> &align_in_phone) {
+  return 0;
   fst::VectorFst<fst::StdArc> phoneloop_fst;
   MakePhoneLoopAcceptor(align_in_phone, &phoneloop_fst);
   fst::VectorFst<fst::StdArc> fst;
@@ -187,8 +195,7 @@ void GmmGop::Compute(const Matrix<BaseFloat> &feats,
                      const std::vector<int32> &transcript) {
   // Align
   fst::VectorFst<fst::StdArc> ali_fst;
-  TrainingGraphCompiler gc(tm_, ctx_dep_, lex_fst_, disambig_syms_, gopts_);
-  gc.CompileGraphFromText(transcript, &ali_fst);
+  gc_->CompileGraphFromText(transcript, &ali_fst);
   DecodableAmDiagGmmScaled ali_decodable(am_, tm_, feats, 1.0);
   std::vector<int32> align;
   Decode(ali_fst, ali_decodable, &align);
@@ -205,7 +212,7 @@ void GmmGop::Compute(const Matrix<BaseFloat> &feats,
     const Matrix<BaseFloat> features(feats_in_phone);
     DecodableAmDiagGmmScaled gmm_decodable(am_, tm_, features, 1.0);
 
-    bool use_viterbi_numera = true;
+    bool use_viterbi_numera = false;
     BaseFloat gop_numerator = use_viterbi_numera ?
                                 ComputeGopNumeraViterbi(gmm_decodable, split[i]):
                                 ComputeGopNumera(ali_decodable, align,

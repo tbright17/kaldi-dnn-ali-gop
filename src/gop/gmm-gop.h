@@ -43,6 +43,7 @@ protected:
   Vector<BaseFloat> gop_result_;
   FasterDecoderOptions decode_opts_;
   TrainingGraphCompilerOptions gopts_;
+  TrainingGraphCompiler *gc_;
 
   void MakePhoneLoopAcceptor(std::vector<int32> &labels,
                              fst::VectorFst<fst::StdArc> *ofst);

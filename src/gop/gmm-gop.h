@@ -45,11 +45,16 @@ protected:
   void AlignUtterance(fst::VectorFst<fst::StdArc> *fst,
                       DecodableInterface *decodable,
                       std::vector<int32> *align);
-
-  void MakePhoneLoopAcceptor(fst::VectorFst<fst::StdArc> *ofst);
-
+  void MakePhoneLoopAcceptor(std::vector<int32> &labels,
+                             fst::VectorFst<fst::StdArc> *ofst);
+  BaseFloat ComputeDecodeLikelihood(DecodableAmDiagGmmScaled &decodable,
+                                    fst::VectorFst<fst::StdArc> &fst_g);
   BaseFloat ComputeGopNumera(DecodableAmDiagGmmScaled &decodable,
-                             std::vector<int32> &align_in_phone);
+                             std::vector<int32> &align,
+                             MatrixIndexT start_frame,
+                             int32 size);
+  BaseFloat ComputeGopNumeraViterbi(DecodableAmDiagGmmScaled &decodable,
+                                    std::vector<int32> &align_in_phone);
   BaseFloat ComputeGopDenomin(DecodableAmDiagGmmScaled &decodable,
                               std::vector<int32> &align_in_phone);
 };

@@ -43,18 +43,24 @@ void GmmGop::Init(std::string &tree_in_filename,
   decode_opts_.beam = 200;
 }
 
-BaseFloat GmmGop::ComputeGopNumera(DecodableAmDiagGmmScaled &decodable,
-                                   std::vector<int32> &align_in_phone) {
-  int32 num_repeats = align_in_phone.size();
-  BaseFloat likelihood = 0;
-  for (MatrixIndexT frame=0; frame<num_repeats; frame++) {
-    likelihood += decodable.LogLikelihood(frame, align_in_phone[frame]);
+void GmmGop::AlignUtterance(fst::VectorFst<fst::StdArc> *fst,
+                            DecodableInterface *decodable,
+                            std::vector<int32> *align) {
+  FasterDecoder decoder(*fst, decode_opts_);
+  decoder.Decode(decodable);
+  bool ans = decoder.ReachedFinal();
+  if (!ans) {
+    KALDI_WARN << "Did not successfully decode file ";
   }
-
-  return likelihood / num_repeats;
+  fst::VectorFst<LatticeArc> decoded;
+  decoder.GetBestPath(&decoded);
+  std::vector<int32> words;
+  LatticeWeight weight;
+  GetLinearSymbolSequence(decoded, align, &words, &weight);
 }
 
-void GmmGop::MakePhoneLoopAcceptor(fst::VectorFst<fst::StdArc> *ofst) {
+void GmmGop::MakePhoneLoopAcceptor(std::vector<int32> &labels,
+                                   fst::VectorFst<fst::StdArc> *ofst) {
   // TODO: make acceptor according phone contexts
   typedef typename fst::StdArc Arc;
   typedef typename Arc::StateId StateId;
@@ -72,24 +78,16 @@ void GmmGop::MakePhoneLoopAcceptor(fst::VectorFst<fst::StdArc> *ofst) {
   ofst->SetFinal(start_state, Weight::One());
 }
 
-BaseFloat GmmGop::ComputeGopDenomin(DecodableAmDiagGmmScaled &decodable,
-                                    std::vector<int32> &align_in_phone) {
-  using fst::SymbolTable;
-  using fst::VectorFst;
-  using fst::StdArc;
-
-  // Make phone loop graph
-  // TODO: use cross-word tri-phone instead
-  VectorFst<StdArc> phoneloop_fst;
-  MakePhoneLoopAcceptor(&phoneloop_fst);
-  VectorFst<StdArc> fst;
-  gc_->CompileGraph(phoneloop_fst, &fst);
+BaseFloat GmmGop::ComputeDecodeLikelihood(DecodableAmDiagGmmScaled &decodable,
+                                          fst::VectorFst<fst::StdArc> &fst_g) {
+  fst::VectorFst<fst::StdArc> fst;
+  gc_->CompileGraph(fst_g, &fst);
 
   FasterDecoderOptions decode_opts;
   FasterDecoder decoder(fst, decode_opts);
   decoder.Decode(&decodable);
   if (! decoder.ReachedFinal()) {
-    KALDI_ERR << "Did not successfully decode " << ", len = " << decodable.NumFramesReady();
+    KALDI_WARN << "Did not successfully decode for fst.";
   }
   fst::VectorFst<LatticeArc> decoded;
   decoder.GetBestPath(&decoded);
@@ -99,23 +97,38 @@ BaseFloat GmmGop::ComputeGopDenomin(DecodableAmDiagGmmScaled &decodable,
   GetLinearSymbolSequence(decoded, &alignment, &words, &weight);
   BaseFloat likelihood = -(weight.Value1()+weight.Value2());
 
+  return likelihood;
+}
+
+BaseFloat GmmGop::ComputeGopNumera(DecodableAmDiagGmmScaled &decodable,
+                                   std::vector<int32> &align,
+                                   MatrixIndexT start_frame,
+                                   int32 size) {
+  KALDI_ASSERT(start_frame + size <= align.size());
+  BaseFloat likelihood = 0;
+  for (MatrixIndexT frame = start_frame; frame < start_frame + size; frame++) {
+    likelihood += decodable.LogLikelihood(frame, align[frame]);
+  }
+
+  return likelihood / size;
+}
+
+BaseFloat GmmGop::ComputeGopNumeraViterbi(DecodableAmDiagGmmScaled &decodable,
+                                          std::vector<int32> &align_in_phone) {
+  fst::VectorFst<fst::StdArc> phonelinear_fst;
+  MakeLinearAcceptor(align_in_phone, &phonelinear_fst);
+  BaseFloat likelihood = ComputeDecodeLikelihood(decodable, phonelinear_fst);
+
   return likelihood / align_in_phone.size();
 }
 
-void GmmGop::AlignUtterance(fst::VectorFst<fst::StdArc> *fst,
-                            DecodableInterface *decodable,
-                            std::vector<int32> *align) {
-  FasterDecoder decoder(*fst, decode_opts_);
-  decoder.Decode(decodable);
-  bool ans = decoder.ReachedFinal();
-  if (!ans) {
-    KALDI_WARN << "Did not successfully decode file ";
-  }
-  fst::VectorFst<LatticeArc> decoded;
-  decoder.GetBestPath(&decoded);
-  std::vector<int32> words;
-  LatticeWeight weight;
-  GetLinearSymbolSequence(decoded, align, &words, &weight);
+BaseFloat GmmGop::ComputeGopDenomin(DecodableAmDiagGmmScaled &decodable,
+                                    std::vector<int32> &align_in_phone) {
+  fst::VectorFst<fst::StdArc> phoneloop_fst;
+  MakePhoneLoopAcceptor(align_in_phone, &phoneloop_fst);
+  BaseFloat likelihood = ComputeDecodeLikelihood(decodable, phoneloop_fst);
+
+  return likelihood / align_in_phone.size();
 }
 
 void GmmGop::Compute(const Matrix<BaseFloat> &feats,
@@ -141,8 +154,12 @@ void GmmGop::Compute(const Matrix<BaseFloat> &feats,
     const Matrix<BaseFloat> features(feats_in_phone);
     DecodableAmDiagGmmScaled gmm_decodable(am_, tm_, features, 1.0);
 
-    BaseFloat gop_numerator = ComputeGopNumera(gmm_decodable, split[i]);
-    BaseFloat gop_denominator = ComputeGopDenomin(gmm_decodable, split[i]);
+    bool use_viterbi_numera = false;
+    BaseFloat gop_numerator = use_viterbi_numera ?
+                                ComputeGopNumeraViterbi(gmm_decodable, split[i]):
+                                ComputeGopNumera(ali_decodable, align,
+                                                 frame_start_idx, split[i].size());
+    BaseFloat gop_denominator = 0; //ComputeGopDenomin(gmm_decodable, split[i]);
     gop_result_(i) = gop_numerator - gop_denominator;
 
     frame_start_idx += split[i].size();

@@ -46,75 +46,6 @@ void GmmGop::Init(std::string &tree_in_filename,
   decode_opts_.beam = 200;
 }
 
-bool GmmGop::CompileGraph(const fst::VectorFst<fst::StdArc> &phone2word_fst,
-                          fst::VectorFst<fst::StdArc> *out_fst) {
-  using namespace fst;
-
-  KALDI_ASSERT(phone2word_fst.Start() != kNoStateId);
-
-  ContextFst<StdArc> *cfst = NULL;
-  {  // make cfst [ it's expanded on the fly ]
-    const std::vector<int32> &phone_syms = tm_.GetPhones();  // needed to create context fst.
-    int32 subseq_symbol = phone_syms.back() + 1;
-    if (!disambig_syms_.empty() && subseq_symbol <= disambig_syms_.back())
-      subseq_symbol = 1 + disambig_syms_.back();
-
-    cfst = new ContextFst<StdArc>(subseq_symbol,
-                                  phone_syms,
-                                  disambig_syms_,
-                                  ctx_dep_.ContextWidth(),
-                                  ctx_dep_.CentralPosition());
-  }
-
-  VectorFst<StdArc> ctx2word_fst;
-  ComposeContextFst(*cfst, phone2word_fst, &ctx2word_fst);
-  // ComposeContextFst is like Compose but faster for this particular Fst type.
-  // [and doesn't expand too many arcs in the ContextFst.]
-
-  KALDI_ASSERT(ctx2word_fst.Start() != kNoStateId);
-
-  HTransducerConfig h_cfg;
-  h_cfg.transition_scale = gopts_.transition_scale;
-
-  std::vector<int32> disambig_syms_h; // disambiguation symbols on
-  // input side of H.
-  VectorFst<StdArc> *H = GetHTransducer(cfst->ILabelInfo(),
-                                        ctx_dep_,
-                                        tm_,
-                                        h_cfg,
-                                        &disambig_syms_h);
-
-  VectorFst<StdArc> &trans2word_fst = *out_fst;  // transition-id to word.
-  TableCompose(*H, ctx2word_fst, &trans2word_fst);
-
-  KALDI_ASSERT(trans2word_fst.Start() != kNoStateId);
-
-  // Epsilon-removal and determinization combined. This will fail if not determinizable.
-  DeterminizeStarInLog(&trans2word_fst);
-
-  if (!disambig_syms_h.empty()) {
-    RemoveSomeInputSymbols(disambig_syms_h, &trans2word_fst);
-    // we elect not to remove epsilons after this phase, as it is
-    // a little slow.
-    if (gopts_.rm_eps)
-      RemoveEpsLocal(&trans2word_fst);
-  }
-
-  // Encoded minimization.
-  MinimizeEncoded(&trans2word_fst);
-
-  std::vector<int32> disambig;
-  AddSelfLoops(tm_,
-               disambig,
-               gopts_.self_loop_scale,
-               gopts_.reorder,
-               &trans2word_fst);
-
-  delete H;
-  delete cfst;
-  return true;
-}
-
 void GmmGop::MakePhoneLoopAcceptor(std::vector<int32> &labels,
                                    fst::VectorFst<fst::StdArc> *ofst) {
   // TODO: make acceptor according phone contexts
@@ -181,12 +112,9 @@ BaseFloat GmmGop::ComputeGopNumeraViterbi(DecodableAmDiagGmmScaled &decodable,
 
 BaseFloat GmmGop::ComputeGopDenomin(DecodableAmDiagGmmScaled &decodable,
                                     std::vector<int32> &align_in_phone) {
-  return 0;
-  fst::VectorFst<fst::StdArc> phoneloop_fst;
-  MakePhoneLoopAcceptor(align_in_phone, &phoneloop_fst);
-  fst::VectorFst<fst::StdArc> fst;
-  CompileGraph(phoneloop_fst, &fst);
-  BaseFloat likelihood = Decode(fst, decodable);
+
+
+  BaseFloat likelihood = 0;  // Decode(fst, decodable);
 
   return likelihood / align_in_phone.size();
 }

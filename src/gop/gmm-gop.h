@@ -47,8 +47,6 @@ protected:
 
   void MakePhoneLoopAcceptor(std::vector<int32> &labels,
                              fst::VectorFst<fst::StdArc> *ofst);
-  bool CompileGraph(const fst::VectorFst<fst::StdArc> &phone2word_fst,
-                    fst::VectorFst<fst::StdArc> *out_fst);
   BaseFloat Decode(fst::VectorFst<fst::StdArc> &fst,
                    DecodableAmDiagGmmScaled &decodable,
                    std::vector<int32> *align = NULL);

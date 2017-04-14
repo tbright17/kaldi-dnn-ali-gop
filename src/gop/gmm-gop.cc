@@ -51,21 +51,6 @@ void GmmGop::Init(std::string &tree_in_filename,
   }
 }
 
-void GmmGop::MakePhoneLoopAcceptor(std::vector<int32> &labels,
-                                   fst::VectorFst<fst::StdArc> *ofst) {
-  // TODO: make acceptor according phone contexts
-  ofst->DeleteStates();
-  StateId start_state = ofst->AddState();
-  ofst->SetStart(start_state);
-  const std::vector<int32> &phone_syms = tm_.GetPhones();
-  for (size_t i = 0; i < phone_syms.size(); i++) {
-    StateId next_state = ofst->AddState();
-    Arc arc_phone(phone_syms[i], phone_syms[i], Weight::One(), next_state);
-    ofst->AddArc(start_state, arc_phone);
-  }
-  ofst->SetFinal(start_state, Weight::One());
-}
-
 BaseFloat GmmGop::Decode(fst::VectorFst<fst::StdArc> &fst,
                          DecodableAmDiagGmmScaled &decodable,
                          std::vector<int32> *align) {

@@ -42,8 +42,6 @@ protected:
   std::map<int32, int32> pdfid_to_tid;
   Vector<BaseFloat> gop_result_;
 
-  void MakePhoneLoopAcceptor(std::vector<int32> &labels,
-                             fst::VectorFst<fst::StdArc> *ofst);
   BaseFloat Decode(fst::VectorFst<fst::StdArc> &fst,
                    DecodableAmDiagGmmScaled &decodable,
                    std::vector<int32> *align = NULL);

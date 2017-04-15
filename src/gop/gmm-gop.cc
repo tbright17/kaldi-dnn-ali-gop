@@ -178,6 +178,7 @@ void GmmGop::Compute(const Matrix<BaseFloat> &feats,
   std::vector<std::vector<int32> > split;
   SplitToPhones(tm_, align, &split);
   gop_result_.Resize(split.size());
+  phones_.resize(split.size());
   int32 frame_start_idx = 0;
   for (MatrixIndexT i = 0; i < split.size(); i++) {
     SubMatrix<BaseFloat> feats_in_phone = feats.Range(frame_start_idx, split[i].size(),
@@ -195,6 +196,7 @@ void GmmGop::Compute(const Matrix<BaseFloat> &feats,
                                                  frame_start_idx, split[i].size());
     BaseFloat gop_denominator = ComputeGopDenomin(split_decodable, phone_l, phone_r);
     gop_result_(i) = (gop_numerator - gop_denominator) / split[i].size();
+    phones_[i] = phone;
 
     frame_start_idx += split[i].size();
   }
@@ -202,6 +204,10 @@ void GmmGop::Compute(const Matrix<BaseFloat> &feats,
 
 Vector<BaseFloat>& GmmGop::Result() {
   return gop_result_;
+}
+
+std::vector<int32>& GmmGop::Phonemes() {
+  return phones_;
 }
 
 }  // End namespace kaldi

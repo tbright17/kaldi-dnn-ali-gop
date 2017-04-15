@@ -36,6 +36,7 @@ public:
             std::string &lex_in_filename);
   void Compute(const Matrix<BaseFloat> &feats, const std::vector<int32> &transcript);
   Vector<BaseFloat>& Result();
+  std::vector<int32>& Phonemes();
 
 protected:
   AmDiagGmm am_;
@@ -44,6 +45,7 @@ protected:
   TrainingGraphCompiler *gc_;
   std::map<int32, int32> pdfid_to_tid;
   Vector<BaseFloat> gop_result_;
+  std::vector<int32> phones_;
 
   BaseFloat Decode(fst::VectorFst<fst::StdArc> &fst,
                    DecodableAmDiagGmmScaled &decodable,

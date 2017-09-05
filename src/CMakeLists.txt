@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 2.6)
 project (kaldi-gop)
 
 # Kaldi's path
-set(KALDI_ROOT /home/junbo/src/kaldi)  # please edit this line
+set(KALDI_ROOT /home/junbo/src/paddy-engine/depends/kaldi-5.1)  # please edit this line
 
 # Settings
 add_compile_options(-std=c++11)
@@ -22,7 +22,6 @@ target_link_libraries(gop ${KALDI_ROOT}/src/hmm/kaldi-hmm.a)
 target_link_libraries(gop ${KALDI_ROOT}/src/gmm/kaldi-gmm.a)
 target_link_libraries(gop ${KALDI_ROOT}/src/tree/kaldi-tree.a)
 target_link_libraries(gop ${KALDI_ROOT}/src/util/kaldi-util.a)
-target_link_libraries(gop ${KALDI_ROOT}/src/thread/kaldi-thread.a)
 target_link_libraries(gop ${KALDI_ROOT}/src/matrix/kaldi-matrix.a)
 target_link_libraries(gop ${KALDI_ROOT}/src/base/kaldi-base.a)
 target_link_libraries(gop ${KALDI_ROOT}/tools/openfst/lib/libfst.a)

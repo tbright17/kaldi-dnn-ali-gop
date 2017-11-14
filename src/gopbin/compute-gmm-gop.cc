@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
     ParseOptions po(usage);
 
     po.Read(argc, argv);
-    if (po.NumArgs() != 6) {
+    if (po.NumArgs() != 7) {
       po.PrintUsage();
       exit(1);
     }
@@ -42,10 +42,12 @@ int main(int argc, char *argv[]) {
     std::string feature_rspecifier = po.GetArg(4);
     std::string transcript_rspecifier = po.GetArg(5);
     std::string gop_wspecifier = po.GetArg(6);
+    std::string alignment_wspecifier = po.GetArg(7);
 
     SequentialBaseFloatMatrixReader feature_reader(feature_rspecifier);
     RandomAccessInt32VectorReader transcript_reader(transcript_rspecifier);
     BaseFloatVectorWriter gop_writer(gop_wspecifier);
+    Int32VectorWriter alignment_writer(alignment_wspecifier);
 
     GmmGop gop;
     gop.Init(tree_in_filename, model_in_filename, lex_in_filename);
@@ -62,6 +64,7 @@ int main(int argc, char *argv[]) {
 
       gop.Compute(features, transcript);
       gop_writer.Write(utt, gop.Result());
+      alignment_writer.Write(utt, gop.get_alignment());
     }
     KALDI_LOG << "Done.";
     return 0;

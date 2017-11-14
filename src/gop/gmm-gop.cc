@@ -170,13 +170,13 @@ void GmmGop::Compute(const Matrix<BaseFloat> &feats,
   fst::VectorFst<fst::StdArc> ali_fst;
   gc_->CompileGraphFromText(transcript, &ali_fst);
   DecodableAmDiagGmmScaled ali_decodable(am_, tm_, feats, 1.0);
-  std::vector<int32> align;
-  Decode(ali_fst, ali_decodable, &align);
-  KALDI_ASSERT(feats.NumRows() == align.size());
+  //std::vector<int32> align;
+  Decode(ali_fst, ali_decodable, &alignment_);
+  KALDI_ASSERT(feats.NumRows() == alignment_.size());
 
   // GOP
   std::vector<std::vector<int32> > split;
-  SplitToPhones(tm_, align, &split);
+  SplitToPhones(tm_, alignment_, &split);
   gop_result_.Resize(split.size());
   phones_.resize(split.size());
   int32 frame_start_idx = 0;
@@ -192,7 +192,7 @@ void GmmGop::Compute(const Matrix<BaseFloat> &feats,
     bool use_viterbi_numera = true;
     BaseFloat gop_numerator = use_viterbi_numera ?
                                 ComputeGopNumeraViterbi(split_decodable, phone_l, phone, phone_r):
-                                ComputeGopNumera(ali_decodable, align,
+                                ComputeGopNumera(ali_decodable, alignment_,
                                                  frame_start_idx, split[i].size());
     BaseFloat gop_denominator = ComputeGopDenomin(split_decodable, phone_l, phone_r);
     gop_result_(i) = (gop_numerator - gop_denominator) / split[i].size();
@@ -204,6 +204,10 @@ void GmmGop::Compute(const Matrix<BaseFloat> &feats,
 
 Vector<BaseFloat>& GmmGop::Result() {
   return gop_result_;
+}
+
+std::vector<int32>& GmmGop::get_alignment() {
+  return alignment_;
 }
 
 std::vector<int32>& GmmGop::Phonemes() {

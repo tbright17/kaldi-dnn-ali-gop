@@ -22,9 +22,9 @@ fi
 decode_nj=1
 
 # Download and prepare the example data
-[ -f swbd_model_tri1.tar.gz ] || wget https://github.com/jimbozhang/kaldi-gop/files/888135/swbd_model_tri1.tar.gz
-[ -d exp ] || tar zxf swbd_model_tri1.tar.gz
-sed -i '3,30275s/[a-z]/\u&/g' data/lang/words.txt
+# [ -f swbd_model_tri1.tar.gz ] || wget https://github.com/jimbozhang/kaldi-gop/files/888135/swbd_model_tri1.tar.gz
+# [ -d exp ] || tar zxf swbd_model_tri1.tar.gz
+# sed -i '3,30275s/[a-z]/\u&/g' data/lang/words.txt
 
 # Decode
 local/compute-gmm-gop.sh --nj "$decode_nj" --cmd "$decode_cmd" data/eval data/lang exp/tri1 exp/eval_gop

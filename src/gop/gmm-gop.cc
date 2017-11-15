@@ -58,7 +58,7 @@ BaseFloat GmmGop::Decode(fst::VectorFst<fst::StdArc> &fst,
                          DecodableAmDiagGmmScaled &decodable,
                          std::vector<int32> *align) {
   FasterDecoderOptions decode_opts;
-  decode_opts.beam = 500;
+  decode_opts.beam = 2000; // number of beams for decoding. Larger, slower and more successful alignments. Smaller, more unsuccessful alignments.
   FasterDecoder decoder(fst, decode_opts);
   decoder.Decode(&decodable);
   if (! decoder.ReachedFinal()) {
@@ -169,7 +169,7 @@ void GmmGop::Compute(const Matrix<BaseFloat> &feats,
   // Align
   fst::VectorFst<fst::StdArc> ali_fst;
   gc_->CompileGraphFromText(transcript, &ali_fst);
-  DecodableAmDiagGmmScaled ali_decodable(am_, tm_, feats, 1.0);
+  DecodableAmDiagGmmScaled ali_decodable(am_, tm_, feats, 1.0); // 1.0 is the acoustic scale
   //std::vector<int32> align;
   Decode(ali_fst, ali_decodable, &alignment_);
   KALDI_ASSERT(feats.NumRows() == alignment_.size());
@@ -179,12 +179,13 @@ void GmmGop::Compute(const Matrix<BaseFloat> &feats,
   SplitToPhones(tm_, alignment_, &split);
   gop_result_.Resize(split.size());
   phones_.resize(split.size());
+  phones_loglikelihood_.Resize(split.size());
   int32 frame_start_idx = 0;
   for (MatrixIndexT i = 0; i < split.size(); i++) {
     SubMatrix<BaseFloat> feats_in_phone = feats.Range(frame_start_idx, split[i].size(),
                                                       0, feats.NumCols());
     const Matrix<BaseFloat> features(feats_in_phone);
-    DecodableAmDiagGmmScaled split_decodable(am_, tm_, features, 1.0);
+    DecodableAmDiagGmmScaled split_decodable(am_, tm_, features, 1.0); // 1.0 is the acoustic scale
 
     int32 phone, phone_l, phone_r;
     GetContextFromSplit(split, i, phone_l, phone, phone_r);
@@ -197,6 +198,7 @@ void GmmGop::Compute(const Matrix<BaseFloat> &feats,
     BaseFloat gop_denominator = ComputeGopDenomin(split_decodable, phone_l, phone_r);
     gop_result_(i) = (gop_numerator - gop_denominator) / split[i].size();
     phones_[i] = phone;
+    phones_loglikelihood_(i) = gop_numerator;
 
     frame_start_idx += split[i].size();
   }
@@ -204,6 +206,10 @@ void GmmGop::Compute(const Matrix<BaseFloat> &feats,
 
 Vector<BaseFloat>& GmmGop::Result() {
   return gop_result_;
+}
+
+Vector<BaseFloat>& GmmGop::get_phn_ll() {
+  return phones_loglikelihood_;
 }
 
 std::vector<int32>& GmmGop::get_alignment() {

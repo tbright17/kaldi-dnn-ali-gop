@@ -26,12 +26,12 @@ int main(int argc, char *argv[]) {
         "Compute GOP with GMM-based models.\n"
         "Usage:   compute-gmm-gop [options] tree-in model-in lexicon-fst-in feature-rspecifier transcriptions-rspecifier gop-wspecifier\n"
         "e.g.: \n"
-        " compute-gmm-gop tree 1.mdl lex.fst scp:train.scp ark:train.tra ark,t:1.gop\n";
+        " compute-gmm-gop tree 1.mdl lex.fst scp:train.scp ark:train.tra ark,t:gop.1 ark,t:algin.1 ark,t:phn_ll.1\n";
 
     ParseOptions po(usage);
 
     po.Read(argc, argv);
-    if (po.NumArgs() != 7) {
+    if (po.NumArgs() != 8) {
       po.PrintUsage();
       exit(1);
     }
@@ -43,11 +43,13 @@ int main(int argc, char *argv[]) {
     std::string transcript_rspecifier = po.GetArg(5);
     std::string gop_wspecifier = po.GetArg(6);
     std::string alignment_wspecifier = po.GetArg(7);
+    std::string phn_ll_wspecifier = po.GetArg(8);
 
     SequentialBaseFloatMatrixReader feature_reader(feature_rspecifier);
     RandomAccessInt32VectorReader transcript_reader(transcript_rspecifier);
     BaseFloatVectorWriter gop_writer(gop_wspecifier);
     Int32VectorWriter alignment_writer(alignment_wspecifier);
+    BaseFloatVectorWriter phn_ll_writer(phn_ll_wspecifier);
 
     GmmGop gop;
     gop.Init(tree_in_filename, model_in_filename, lex_in_filename);
@@ -65,6 +67,7 @@ int main(int argc, char *argv[]) {
       gop.Compute(features, transcript);
       gop_writer.Write(utt, gop.Result());
       alignment_writer.Write(utt, gop.get_alignment());
+      phn_ll_writer.Write(utt, gop.get_phn_ll());
     }
     KALDI_LOG << "Done.";
     return 0;

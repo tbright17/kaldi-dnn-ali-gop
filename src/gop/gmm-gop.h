@@ -38,6 +38,7 @@ public:
   Vector<BaseFloat>& Result();
   std::vector<int32>& get_alignment();
   std::vector<int32>& Phonemes();
+  Vector<BaseFloat>& get_phn_ll();
 
 protected:
   AmDiagGmm am_;
@@ -48,6 +49,7 @@ protected:
   Vector<BaseFloat> gop_result_;
   std::vector<int32> alignment_;
   std::vector<int32> phones_;
+  Vector<BaseFloat> phones_loglikelihood_; // phoneme log likelihood
 
   BaseFloat Decode(fst::VectorFst<fst::StdArc> &fst,
                    DecodableAmDiagGmmScaled &decodable,

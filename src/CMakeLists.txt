@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 2.6)
 project (kaldi-gop)
 
 # Kaldi's path
-set(KALDI_ROOT /home/junbo/src/paddy-engine/depends/kaldi-5.1)  # please edit this line
+set(KALDI_ROOT /home/ming/Documents/software/kaldi)  # please edit this line
 
 # Settings
 add_compile_options(-std=c++11)

@@ -180,7 +180,7 @@ void DnnGop::Compute(const Matrix<BaseFloat> &feats,
   nnet3::CollapseModel(nnet3::CollapseModelConfig(), &(am_.GetNnet()));
   nnet3::NnetSimpleComputationOptions decodable_opts;
   nnet3::CachingOptimizingCompiler compiler(am_.GetNnet(),decodable_opts.optimize_config);
-  int32 online_ivector_period = 0;
+  int32 online_ivector_period = 10;
   nnet3::DecodableAmNnetSimple ali_decodable(decodable_opts, tm_, am_, feats, NULL, 
                     online_ivectors, online_ivector_period, &compiler);
   //std::vector<int32> align;
@@ -197,12 +197,12 @@ void DnnGop::Compute(const Matrix<BaseFloat> &feats,
   for (MatrixIndexT i = 0; i < split.size(); i++) {
     SubMatrix<BaseFloat> feats_in_phone = feats.Range(frame_start_idx, split[i].size(),
                                                       0, feats.NumCols());
-    SubMatrix<BaseFloat> ivector_in_phone = online_ivectors->Range(frame_start_idx, split[i].size(),
-                                                      0, feats.NumCols());
+    SubMatrix<BaseFloat> ivector_in_phone = online_ivectors->Range(frame_start_idx/online_ivector_period, split[i].size()/online_ivector_period+1,
+                                                      0, online_ivectors->NumCols());
     const Matrix<BaseFloat> features(feats_in_phone);
     const Matrix<BaseFloat> online_ivectors_feat(ivector_in_phone);
     nnet3::DecodableAmNnetSimple split_decodable(decodable_opts, tm_, am_, features, NULL, 
-                    &online_ivectors_feat, online_ivector_period, &compiler); // use the same sentence-level ivector
+                    &online_ivectors_feat, online_ivector_period, &compiler);
 
     int32 phone, phone_l, phone_r;
     GetContextFromSplit(split, i, phone_l, phone, phone_r);

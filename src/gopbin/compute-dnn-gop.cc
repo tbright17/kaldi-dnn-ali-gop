@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
     ParseOptions po(usage);
 
     po.Read(argc, argv);
-    if (po.NumArgs() != 8) {
+    if (po.NumArgs() != 9) {
       po.PrintUsage();
       exit(1);
     }
@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
     BaseFloatVectorWriter phn_ll_writer(phn_ll_wspecifier);
 
 #if HAVE_CUDA==1
-    CuDevice::Instantiate().SelectGpuId("yes");
+    CuDevice::Instantiate().SelectGpuId("no");
 #endif
 
     DnnGop gop;
@@ -71,6 +71,7 @@ int main(int argc, char *argv[]) {
       }
       const Matrix<BaseFloat> &features = feature_reader.Value();
       const Matrix<BaseFloat> *online_ivector = &online_ivector_reader.Value(utt);
+      //KALDI_LOG << "ivector dimension is " << online_ivector->NumCols();
       const std::vector<int32> &transcript = transcript_reader.Value(utt);
 
       gop.Compute(features, online_ivector, transcript);

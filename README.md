@@ -3,7 +3,7 @@
 Computes GOP (Goodness of Pronunciation) and do forced alignment bases on Kaldi with nnet3 support.
 
 ## How to build
-1. Download and complile [Kaldi](http://www.kaldi-asr.org).
+1. Download [Kaldi](http://www.kaldi-asr.org).
 1. Put the folders under src into kaldi/src.
 1. Compile the code as compiling kaldi (kaldi/src/INSTALL):
 
@@ -16,3 +16,4 @@ cd egs/gop-compute
 1. Add GPU support
 2. Convert alignment results to readable format (textgrid)
 3. Add comparison between GMM and DNN (nnet3)
+4. Add feature extraction script

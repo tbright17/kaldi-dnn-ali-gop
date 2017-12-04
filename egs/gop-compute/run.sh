@@ -1,6 +1,7 @@
 #!/bin/sh
 
 # Copyright 2016-2017   Author: Junbo Zhang  <dr.jimbozhang@gmail.com>
+#                               Ming Tu
 
 set -e
 #set -x

@@ -13,7 +13,7 @@ cd egs/gop-compute
 ./run.sh
 ```
 ## To-do
-1. Add GPU support
-2. Convert alignment results to readable format (textgrid)
-3. Add comparison between GMM and DNN (nnet3)
-4. Add feature extraction script
+- [ ] Add GPU support
+- [x] Convert alignment results to readable format (textgrid)
+- [ ] Add comparison between GMM and DNN (nnet3)
+- [ ] Add feature extraction script

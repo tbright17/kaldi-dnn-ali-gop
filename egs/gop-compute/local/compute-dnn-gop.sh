@@ -1,7 +1,6 @@
 #!/bin/sh
 
-# Copyright 2016-2017  Author: Junbo Zhang
-#                              Ming Tu
+# Copyright 2016-2017  Author: Ming Tu
 
 # Begin configuration section.
 nj=1

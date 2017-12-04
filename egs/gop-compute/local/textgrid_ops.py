@@ -1,3 +1,12 @@
+#!/usr/bin/env python
+
+# Copyright 2017    Ming Tu
+
+# This script contains several functions to analyze ctm files output by acoustic model
+# and convert them to textgrid format files.
+# This code is adapted from corresponding code in Montreal-Forced-aligner 
+# (https://github.com/MontrealCorpusTools/Montreal-Forced-Aligner.git)
+
 import os
 import sys
 import traceback

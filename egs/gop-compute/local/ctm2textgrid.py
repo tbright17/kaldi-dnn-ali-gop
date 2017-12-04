@@ -1,3 +1,11 @@
+#!/usr/bin/env python
+
+# Copyright 2017    Ming Tu
+
+# This script contains the main function to convert ctm files to textgrid format files.
+# This code is adapted from corresponding code in Montreal-Forced-aligner 
+# (https://github.com/MontrealCorpusTools/Montreal-Forced-Aligner.git)
+
 import argparse, os
 from textgrid_ops import *
 

@@ -31,12 +31,19 @@ int main(int argc, char *argv[]) {
         " compute-gmm-gop tree 1.mdl lex.fst scp:train.scp ark:train.tra ark,t:gop.1 ark,t:algin.1 ark,t:phn_ll.1\n";
 
     ParseOptions po(usage);
+    std::string use_gpu = "no";
+    po.Register("use-gpu", &use_gpu,
+                 "yes|no|optional|wait, only has effect if compiled with CUDA");
 
     po.Read(argc, argv);
     if (po.NumArgs() != 9) {
       po.PrintUsage();
       exit(1);
     }
+
+#if HAVE_CUDA==1
+    CuDevice::Instantiate().SelectGpuId(use_gpu);
+#endif
 
     std::string tree_in_filename = po.GetArg(1);
     std::string model_in_filename = po.GetArg(2);
@@ -54,10 +61,6 @@ int main(int argc, char *argv[]) {
     BaseFloatVectorWriter gop_writer(gop_wspecifier);
     Int32VectorWriter alignment_writer(alignment_wspecifier);
     BaseFloatVectorWriter phn_ll_writer(phn_ll_wspecifier);
-
-#if HAVE_CUDA==1
-    CuDevice::Instantiate().SelectGpuId("no");
-#endif
 
     DnnGop gop;
     gop.Init(tree_in_filename, model_in_filename, lex_in_filename);

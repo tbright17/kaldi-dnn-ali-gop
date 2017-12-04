@@ -58,7 +58,7 @@ echo "$0: feature type is $feat_type"
 case $feat_type in
   delta) feats="ark,s,cs:apply-cmvn $cmvn_opts --utt2spk=ark:$sdata/JOB/utt2spk scp:$sdata/JOB/cmvn.scp scp:$sdata/JOB/feats.scp ark:- | add-deltas $delta_opts ark:- ark:- |";;
   lda) feats="ark,s,cs:apply-cmvn $cmvn_opts --utt2spk=ark:$sdata/JOB/utt2spk scp:$sdata/JOB/cmvn.scp scp:$sdata/JOB/feats.scp ark:- | splice-feats $splice_opts ark:- ark:- | transform-feats $srcdir/final.mat ark:- ark:- |"
-    cp $srcdir/final.mat $srcdir/full.mat $dir
+    #cp $srcdir/final.mat $srcdir/full.mat $dir
    ;;
   *) echo "$0: invalid feature type $feat_type" && exit 1;
 esac
@@ -81,6 +81,7 @@ $cmd JOB=1:$nj $dir/log/align_phone.JOB.log \
   lattice-to-phone-lattice "$dir/final.mdl" "ark,t:$dir/aligned.JOB" "ark:-" \| \
   nbest-to-ctm "ark:-" "$dir/phone.JOB.ctm" || exit 1;
 
+python local/ctm2textgrid.py $nj $dir $dir/aligned_textgrid $lang/words.txt $lang/phones.txt $data/utt2dur
 
 # Convenience for debug
 # apply-cmvn --utt2spk=ark:data/eval/split1/1/utt2spk scp:data/eval/split1/1/cmvn.scp scp:data/eval/split1/1/feats.scp ark:- | add-deltas ark:- ark,t:data/eval/feats.1.ark.txt

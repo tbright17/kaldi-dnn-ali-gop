@@ -65,7 +65,7 @@ echo "$0: computing GOP in $data using model from $srcdir, putting results in $d
 mdl=$srcdir/final.mdl
 tra="ark:utils/sym2int.pl --map-oov $oov -f 2- $lang/words.txt $sdata/JOB/text|";
 $cmd JOB=1:$nj $dir/log/gop.JOB.log \
-  compute-dnn-gop $dir/tree $dir/final.mdl $lang/L.fst "$feats" "$ivectors" "$tra" "ark,t:$dir/gop.JOB" "ark,t:$dir/align.JOB" "ark,t:$dir/phoneme_ll.JOB" || exit 1;
+  compute-dnn-gop --use-gpu=no $dir/tree $dir/final.mdl $lang/L.fst "$feats" "$ivectors" "$tra" "ark,t:$dir/gop.JOB" "ark,t:$dir/align.JOB" "ark,t:$dir/phoneme_ll.JOB" || exit 1;
 
 # Generate alignment
 $cmd JOB=1:$nj $dir/log/align.JOB.log \
@@ -78,10 +78,11 @@ $cmd JOB=1:$nj $dir/log/align_phone.JOB.log \
   lattice-to-phone-lattice "$dir/final.mdl" "ark,t:$dir/aligned.JOB" "ark:-" \| \
   nbest-to-ctm "ark:-" "$dir/phone.JOB.ctm" || exit 1;
 
+python local/ctm2textgrid.py $nj $dir $dir/aligned_textgrid $lang/words.txt $lang/phones.txt $data/utt2dur
 
 # Convenience for debug
 # apply-cmvn --utt2spk=ark:data/eval/split1/1/utt2spk scp:data/eval/split1/1/cmvn.scp scp:data/eval/split1/1/feats.scp ark:- | add-deltas ark:- ark,t:data/eval/feats.1.ark.txt
 # utils/sym2int.pl --map-oov `cat data/lang/oov.int` -f 2- data/lang/words.txt data/eval/text > data/eval/trans
 # compute-gmm-gop exp/tri1/tree exp/tri1/final.mdl data/lang/L.fst ark,t:data/eval/feats.1.ark.txt ark,t:data/eval/trans ark,t:gop.1
 
-echo "$0: done computing GOP."
+echo "$0: done computing GOP and generating alignments."

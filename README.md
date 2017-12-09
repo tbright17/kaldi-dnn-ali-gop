@@ -12,8 +12,21 @@ Computes GOP (Goodness of Pronunciation) and do forced alignment bases on Kaldi 
 cd egs/gop-compute
 ./run.sh
 ```
+### Notes on data preparation
+To use this tool, audio files and corresponding transcript needs to be prepared and stored in following format:
+.
+├── ...
+├── data_dir                    
+    ├── speaker1 # indicate speaker id          
+    ├── speaker2         
+    └── speaker3
+        ├── utt1.wav # indicate utterance id
+        ├── utt1.lab                       
+
+Do not use space in speaker folder name or utterance file name, using underscore instead.
+
 ## To-do
 - [ ] Add GPU support
 - [x] Convert alignment results to readable format (textgrid)
 - [ ] Add comparison between GMM and DNN (nnet3)
-- [ ] Add feature extraction script
+- [x] Add feature extraction script

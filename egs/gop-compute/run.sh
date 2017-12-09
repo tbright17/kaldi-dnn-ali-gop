@@ -1,7 +1,6 @@
 #!/bin/sh
 
-# Copyright 2016-2017   Author: Junbo Zhang  <dr.jimbozhang@gmail.com>
-#                               Ming Tu
+# Copyright 2017   Author: Ming Tu                               
 
 set -e
 #set -x
@@ -22,11 +21,10 @@ fi
 
 decode_nj=1
 
-# Download and prepare the example data
-# [ -f swbd_model_tri1.tar.gz ] || wget https://github.com/jimbozhang/kaldi-gop/files/888135/swbd_model_tri1.tar.gz
-# [ -d exp ] || tar zxf swbd_model_tri1.tar.gz
-# sed -i '3,30275s/[a-z]/\u&/g' data/lang/words.txt
+# data preparation
+local/data_preparation.sh --dnn true accent_test_audio accent_test_data_dnn
 
 # Decode
-local/compute-gmm-gop.sh --nj "$decode_nj" --cmd "$decode_cmd" data/eval data/lang exp/tri1 exp/eval_gop   ### gmm model
-#local/compute-dnn-gop.sh --nj "$decode_nj" --cmd "$decode_cmd" data_dnn/eval exp_dnn/dev_clean_online_ivectors data_dnn/lang exp_dnn/nnet3 exp_dnn/eval_gop    ### dnn model
+#local/compute-gmm-gop.sh --nj "$decode_nj" --cmd "$decode_cmd" accent_test_data data/lang exp/tri1 accent_exp/eval_gop   ### gmm model
+local/compute-dnn-gop.sh --nj "$decode_nj" --cmd "$decode_cmd" accent_test_data_dnn accent_test_data_dnn/ivectors_hires \
+           data_dnn/lang exp_dnn/nnet3 accent_exp_dnn/eval_gop    ### dnn model

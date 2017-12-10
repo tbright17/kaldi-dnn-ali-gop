@@ -13,7 +13,7 @@ cd egs/gop-compute
 ./run.sh
 ```
 ### Notes on data preparation
-To use this tool, audio files and corresponding transcript needs to be prepared and stored in following format:
+To use this tool, audio files (.wav) and corresponding transcript (.lab) needs to be prepared and stored in following format:
 
 ```
 .

@@ -14,17 +14,18 @@ cd egs/gop-compute
 ```
 ### Notes on data preparation
 To use this tool, audio files and corresponding transcript needs to be prepared and stored in following format:
-    ```bash
-    .
-    ├── ...
-    ├── data_dir                   
-    │   ├── speaker1 # indicate speaker id          
-    │   ├── speaker2         
-    │   └── speaker3
-    |       ├── utt1.wav # indicate utterance id
-    |       ├── utt1.lab 
-    └── ...
-    ```
+
+```
+.
+├── ...
+├── data_dir                   
+│   ├── speaker1 # indicate speaker id          
+│   ├── speaker2         
+│   └── speaker3
+|       ├── utt1.wav # indicate utterance id
+|       ├── utt1.lab 
+└── ...
+```
 
 Do not use space in speaker folder name or utterance file name, using underscore instead.
 

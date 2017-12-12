@@ -1,6 +1,10 @@
 #!/bin/sh
 
-# Copyright 2017   Author: Ming Tu                               
+# Copyright 2017   Author: Ming Tu
+# Arguments:
+# audio-dir: where audio files are stored
+# data-dir: where extracted features are stored
+# result-dir: where results are stored                               
 
 set -e
 #set -x

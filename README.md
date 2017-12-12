@@ -10,9 +10,9 @@ Computes GOP (Goodness of Pronunciation) and do forced alignment bases on Kaldi 
 ## Run the example
 ```
 cd egs/gop-compute
-./run.sh
+./run.sh --dnn true/false audio_dir data_dir result_dir
 ```
-You may want to change the data directory paths in run.sh
+See meaning of arguments in run.sh
 
 ### Notes on data preparation
 To use this tool, audio files (.wav) and corresponding transcript (.lab) needs to be prepared and stored in following format:

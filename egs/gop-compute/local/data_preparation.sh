@@ -36,12 +36,12 @@ for d in $data/*/; do
         filename="$(basename $f)"
         filepath="$(dirname $f)"
         spkname="$(basename $filepath)"
-        echo "${filename%.*} sox $PWD/$f -e signed-integer -b 16 -r 16000 -t wav - |" >> $dir/wav.scp # Prepare wav.scp
+        echo "${filename%.*} sox $f -e signed-integer -b 16 -r 16000 -t wav - |" >> $dir/wav.scp # Prepare wav.scp
         echo "$spkname ${filename%.*}" >> $dir/spk2utt # Prepare spk2utt
         echo "${filename%.*} $spkname" >> $dir/utt2spk # Prepare utt2spk
         (
             printf "${filename%.*} "
-            cat "$data/$spkname/${filename%.*}.lab"
+            cat "$data/$spkname/${filename%.*}.lab" | tr [a-z] [A-Z]
             printf "\n"
         ) >> $dir/text # Prepare transcript
     done

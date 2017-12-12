@@ -1,6 +1,6 @@
 
 # kaldi-gop
-Computes GOP (Goodness of Pronunciation) and do forced alignment bases on Kaldi with nnet3 support.
+Computes GOP (Goodness of Pronunciation) and do forced alignment bases on Kaldi with nnet3 support. The acoustic model is trained using librispeech database (960 hours data) with the scripts under kaldi/egs/librispeech.
 
 ## How to build
 1. Download [Kaldi](http://www.kaldi-asr.org).
@@ -12,6 +12,8 @@ Computes GOP (Goodness of Pronunciation) and do forced alignment bases on Kaldi 
 cd egs/gop-compute
 ./run.sh
 ```
+You may want to change the data directory paths in run.sh
+
 ### Notes on data preparation
 To use this tool, audio files (.wav) and corresponding transcript (.lab) needs to be prepared and stored in following format:
 
@@ -19,15 +21,15 @@ To use this tool, audio files (.wav) and corresponding transcript (.lab) needs t
 .
 ├── ...
 ├── data_dir                   
-│   ├── speaker1 # indicate speaker id          
+│   ├── speaker1 # indicate speaker ID          
 │   ├── speaker2         
 │   └── speaker3
-|       ├── utt1.wav # indicate utterance id
+|       ├── utt1.wav # indicate utterance ID
 |       ├── utt1.lab 
 └── ...
 ```
 
-Do not use space in speaker folder name or utterance file name, using underscore instead.
+Do not use space in speaker folder name or utterance file name, using underscore instead. Make sure different speakers have different folder names (speaker ID) and different audio files have different file name (utt ID).
 
 ## To-do
 - [ ] Add GPU support

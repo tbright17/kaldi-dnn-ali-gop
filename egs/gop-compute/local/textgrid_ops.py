@@ -7,7 +7,7 @@
 # This code is adapted from corresponding code in Montreal-Forced-aligner 
 # (https://github.com/MontrealCorpusTools/Montreal-Forced-Aligner.git)
 
-import os
+import os, re
 import sys
 import traceback
 from decimal import Decimal
@@ -91,6 +91,8 @@ def ctm_to_textgrid(word_ctm, phone_ctm, out_directory, utt2dur, frameshift=0.01
             for interval in phone_ctm[k]:
                 if maxtime - interval[1] < frameshift:
                     interval[1] = maxtime
+                #remove B E I and stress (0,1) information from phoneme
+                interval[2] = re.sub("\d+","",interval[2].split('_')[0])
                 phonetier.add(*interval)
             tg.append(wordtier)
             tg.append(phonetier)

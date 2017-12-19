@@ -91,7 +91,79 @@ BaseFloat DnnGop::ComputeGopNumera(nnet3::DecodableAmNnetSimple &decodable,
   return likelihood;
 }
 
-BaseFloat DnnGop::ComputeGopNumeraViterbi(nnet3::DecodableAmNnetSimple &decodable,
+BaseFloat DnnGop::ComputeGopNumeraC(nnet3::DecodableAmNnetSimple &decodable,
+                                          int32 phone_l, int32 phone, int32 phone_r,
+                                          MatrixIndexT start_frame,
+                                          int32 size) {
+  KALDI_ASSERT(ctx_dep_.ContextWidth() == 3);
+  KALDI_ASSERT(ctx_dep_.CentralPosition() == 1);
+  std::vector<int32> phoneseq(3);
+  phoneseq[0] = phone_l;
+  phoneseq[1] = phone;
+  phoneseq[2] = phone_r;
+  
+  const int pdfclass_num = tm_.GetTopo().NumPdfClasses(phone);
+
+  BaseFloat likelihood = 0;
+  for (MatrixIndexT frame = start_frame; frame < start_frame + size; frame++) {
+    Vector<BaseFloat> temp_likelihood(pdfclass_num);
+    for (size_t c = 0; c < pdfclass_num; c++) {
+      int32 pdf_id;
+      KALDI_ASSERT(ctx_dep_.Compute(phoneseq, c, &pdf_id));
+      int32 tid = pdfid_to_tid[pdf_id];
+
+      temp_likelihood(c) = decodable.LogLikelihood(frame, tid); 
+    }
+    likelihood += temp_likelihood.LogSumExp(5);
+  }
+
+  return likelihood;
+}
+
+BaseFloat DnnGop::ComputeGopDenominC(nnet3::DecodableAmNnetSimple &decodable,
+                                    int32 phone_l, int32 phone_r,
+                                    MatrixIndexT start_frame,
+                                    int32 size) {
+  KALDI_ASSERT(ctx_dep_.ContextWidth() == 3);
+  KALDI_ASSERT(ctx_dep_.CentralPosition() == 1);
+  std::vector<int32> phoneseq(3);
+  phoneseq[0] = phone_l;
+  phoneseq[2] = phone_r;
+
+  BaseFloat likelihood = -10000000;
+
+  const std::vector<int32> &phone_syms = tm_.GetPhones();
+
+  //Vector<BaseFloat> likelihood(phone_syms.size());
+
+  for (size_t i = 0; i < phone_syms.size(); i++) {
+    int32 phone = phone_syms[i];
+    phoneseq[1] = phone;
+    const int pdfclass_num = tm_.GetTopo().NumPdfClasses(phone);
+    
+    BaseFloat phn_likelihood = 0;
+    for (MatrixIndexT frame = start_frame; frame < start_frame + size; frame++) {
+      Vector<BaseFloat> temp_likelihood(pdfclass_num);
+      for (size_t c = 0; c < pdfclass_num; c++) {
+        int32 pdf_id;
+        KALDI_ASSERT(ctx_dep_.Compute(phoneseq, c, &pdf_id));
+        int32 tid = pdfid_to_tid[pdf_id];
+
+        temp_likelihood(c) = decodable.LogLikelihood(frame, tid); 
+      }
+      phn_likelihood += temp_likelihood.LogSumExp(5);
+    }
+    if (phn_likelihood > likelihood) {
+      likelihood = phn_likelihood;
+    }
+    //likelihood(i) = phn_likelihood;
+  }
+
+  return likelihood;
+}
+
+// Doesn't work correctly
+BaseFloat DnnGop::ComputeGopNumeraV(nnet3::DecodableAmNnetSimple &decodable,
                                           int32 phone_l, int32 phone, int32 phone_r) {
   KALDI_ASSERT(ctx_dep_.ContextWidth() == 3);
   KALDI_ASSERT(ctx_dep_.CentralPosition() == 1);
@@ -121,7 +193,8 @@ BaseFloat DnnGop::ComputeGopNumeraViterbi(nnet3::DecodableAmNnetSimple &decodabl
   return Decode(fst, decodable);
 }
 
-BaseFloat DnnGop::ComputeGopDenomin(nnet3::DecodableAmNnetSimple &decodable,
+// Doesn't work correctly
+BaseFloat DnnGop::ComputeGopDenominV(nnet3::DecodableAmNnetSimple &decodable,
                                     int32 phone_l, int32 phone_r) {
   KALDI_ASSERT(ctx_dep_.ContextWidth() == 3);
   KALDI_ASSERT(ctx_dep_.CentralPosition() == 1);
@@ -179,6 +252,7 @@ void DnnGop::Compute(const Matrix<BaseFloat> &feats,
   nnet3::SetDropoutTestMode(true, &(am_.GetNnet()));
   nnet3::CollapseModel(nnet3::CollapseModelConfig(), &(am_.GetNnet()));
   nnet3::NnetSimpleComputationOptions decodable_opts;
+  decodable_opts.acoustic_scale = 1.0;
   nnet3::CachingOptimizingCompiler compiler(am_.GetNnet(),decodable_opts.optimize_config);
   int32 online_ivector_period = 10;
   nnet3::DecodableAmNnetSimple ali_decodable(decodable_opts, tm_, am_, feats, NULL, 
@@ -203,18 +277,14 @@ void DnnGop::Compute(const Matrix<BaseFloat> &feats,
                                                       0, online_ivectors->NumCols());
     const Matrix<BaseFloat> features(feats_in_phone);
     const Matrix<BaseFloat> online_ivectors_feat(ivector_in_phone);
-    nnet3::DecodableAmNnetSimple split_decodable(decodable_opts, tm_, am_, features, NULL, 
-                    &online_ivectors_feat, online_ivector_period, &compiler);
+    // nnet3::DecodableAmNnetSimple split_decodable(decodable_opts, tm_, am_, features, NULL, 
+    //                 &online_ivectors_feat, online_ivector_period, &compiler);
 
     int32 phone, phone_l, phone_r;
     GetContextFromSplit(split, i, phone_l, phone, phone_r);
 
-    bool use_viterbi_numera = true;
-    BaseFloat gop_numerator = use_viterbi_numera ?
-                                ComputeGopNumeraViterbi(split_decodable, phone_l, phone, phone_r):
-                                ComputeGopNumera(ali_decodable, alignment_,
-                                                 frame_start_idx, split[i].size());
-    BaseFloat gop_denominator = ComputeGopDenomin(split_decodable, phone_l, phone_r);
+    BaseFloat gop_numerator = ComputeGopNumeraC(ali_decodable, phone_l, phone, phone_r, frame_start_idx, split[i].size());
+    BaseFloat gop_denominator = ComputeGopDenominC(ali_decodable, phone_l, phone_r, frame_start_idx, split[i].size());
     gop_result_(i) = (gop_numerator - gop_denominator) / split[i].size();
     phones_[i] = phone;
     phones_loglikelihood_(i) = gop_numerator;

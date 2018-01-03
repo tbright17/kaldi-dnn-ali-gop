@@ -3,6 +3,7 @@
 // Copyright 2016-2017  Junbo Zhang
 //                      Ming Tu
 
+
 // This program based on Kaldi (https://github.com/kaldi-asr/kaldi).
 // However, this program is NOT UNDER THE SAME LICENSE of Kaldi's.
 //
@@ -118,7 +119,7 @@ BaseFloat GmmGop::ComputeGopNumeraViterbi(DecodableAmDiagGmmScaled &decodable,
   return Decode(fst, decodable);
 }
 
-BaseFloat GmmGop::ComputeGopDenomin(DecodableAmDiagGmmScaled &decodable,
+BaseFloat GmmGop::ComputeGopDenominViterbi(DecodableAmDiagGmmScaled &decodable,
                                     int32 phone_l, int32 phone_r) {
   KALDI_ASSERT(ctx_dep_.ContextWidth() == 3);
   KALDI_ASSERT(ctx_dep_.CentralPosition() == 1);
@@ -157,6 +158,45 @@ BaseFloat GmmGop::ComputeGopDenomin(DecodableAmDiagGmmScaled &decodable,
   return Decode(fst, decodable);
 }
 
+Vector<BaseFloat> GmmGop::ComputePhonemesConf(DecodableAmDiagGmmScaled &decodable,
+                                    int32 phone_l, int32 phone_r,
+                                    MatrixIndexT start_frame,
+                                   int32 size) {
+  KALDI_ASSERT(ctx_dep_.ContextWidth() == 3);
+  KALDI_ASSERT(ctx_dep_.CentralPosition() == 1);
+  std::vector<int32> phoneseq(3);
+  phoneseq[0] = phone_l;
+  phoneseq[2] = phone_r;
+
+  const std::vector<int32> &phone_syms = tm_.GetPhones();
+
+  Vector<BaseFloat> likelihood(phone_syms.size());
+
+  for (size_t i = 0; i < phone_syms.size(); i++) {
+    int32 phone = phone_syms[i];
+    phoneseq[1] = phone;
+    const int pdfclass_num = tm_.GetTopo().NumPdfClasses(phone);
+    
+    BaseFloat phn_likelihood = 0;
+    for (MatrixIndexT frame = start_frame; frame < start_frame + size; frame++) {
+      Vector<BaseFloat> temp_likelihood(pdfclass_num);
+      for (size_t c = 0; c < pdfclass_num; c++) {
+        int32 pdf_id;
+        KALDI_ASSERT(ctx_dep_.Compute(phoneseq, c, &pdf_id));
+        int32 tid = pdfid_to_tid[pdf_id];
+
+        temp_likelihood(c) = decodable.LogLikelihood(frame, tid); 
+      }
+      phn_likelihood += temp_likelihood.LogSumExp(5);
+    }
+
+    likelihood(i) = phn_likelihood;
+  }
+
+  return likelihood;
+
+}
+
 void GmmGop::GetContextFromSplit(std::vector<std::vector<int32> > split,
                                  int32 index, int32 &phone_l, int32 &phone, int32 &phone_r) {
   KALDI_ASSERT(index < split.size());
@@ -176,11 +216,20 @@ void GmmGop::Compute(const Matrix<BaseFloat> &feats,
   KALDI_ASSERT(feats.NumRows() == alignment_.size());
 
   // GOP
+  const std::vector<int32> &phone_syms = tm_.GetPhones();
+
+  // For debug
+  // KALDI_LOG << "Phonemes are ";
+  // for (int32 i = 0;i<phone_syms.size();i++) {
+  //     KALDI_LOG << phone_syms[i];
+  // }
+
   std::vector<std::vector<int32> > split;
   SplitToPhones(tm_, alignment_, &split);
   gop_result_.Resize(split.size());
   phones_.resize(split.size());
   phones_loglikelihood_.Resize(split.size());
+  phonemes_conf_.Resize(split.size(),phone_syms.size());
   int32 frame_start_idx = 0;
   for (MatrixIndexT i = 0; i < split.size(); i++) {
     SubMatrix<BaseFloat> feats_in_phone = feats.Range(frame_start_idx, split[i].size(),
@@ -196,10 +245,11 @@ void GmmGop::Compute(const Matrix<BaseFloat> &feats,
                                 ComputeGopNumeraViterbi(split_decodable, phone_l, phone, phone_r):
                                 ComputeGopNumera(ali_decodable, alignment_,
                                                  frame_start_idx, split[i].size());
-    BaseFloat gop_denominator = ComputeGopDenomin(split_decodable, phone_l, phone_r);
+    BaseFloat gop_denominator = ComputeGopDenominViterbi(split_decodable, phone_l, phone_r);
     gop_result_(i) = (gop_numerator - gop_denominator) / split[i].size();
     phones_[i] = phone;
     phones_loglikelihood_(i) = gop_numerator;
+    phonemes_conf_.CopyRowFromVec(ComputePhonemesConf(ali_decodable,phone_l, phone_r,frame_start_idx, split[i].size()), i);
 
     frame_start_idx += split[i].size();
   }
@@ -219,6 +269,10 @@ std::vector<int32>& GmmGop::get_alignment() {
 
 std::vector<int32>& GmmGop::Phonemes() {
   return phones_;
+}
+
+Matrix<BaseFloat>& GmmGop::PhonemesConf() {
+  return phonemes_conf_;
 }
 
 }  // End namespace kaldi

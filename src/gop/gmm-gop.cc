@@ -177,7 +177,7 @@ Vector<BaseFloat> GmmGop::ComputePhonemesConf(DecodableAmDiagGmmScaled &decodabl
     phoneseq[1] = phone;
     const int pdfclass_num = tm_.GetTopo().NumPdfClasses(phone);
     
-    Vector<BaseFloat> phn_likelihood(size);
+   BaseFloat phn_likelihood;
     for (MatrixIndexT frame = start_frame; frame < start_frame + size; frame++) {
       Vector<BaseFloat> temp_likelihood(pdfclass_num);
       for (size_t c = 0; c < pdfclass_num; c++) {
@@ -187,10 +187,10 @@ Vector<BaseFloat> GmmGop::ComputePhonemesConf(DecodableAmDiagGmmScaled &decodabl
 
         temp_likelihood(c) = decodable.LogLikelihood(frame, tid); 
       }
-      phn_likelihood(frame-start_frame)= temp_likelihood.LogSumExp(5);
+      phn_likelihood += temp_likelihood.LogSumExp(5);
     }
 
-    likelihood(i) = phn_likelihood.LogSumExp(5) / size;
+    likelihood(i) = phn_likelihood / size;
   }
 
   return likelihood;

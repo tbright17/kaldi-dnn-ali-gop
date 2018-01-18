@@ -58,23 +58,15 @@ protected:
 
   BaseFloat Decode(fst::VectorFst<fst::StdArc> &fst,
                    nnet3::DecodableAmNnetSimple &decodable,
-                   std::vector<int32> *align = NULL);
+                   std::vector<int32> *align = NULL);                   
   BaseFloat ComputeGopNumera(nnet3::DecodableAmNnetSimple &decodable,
-                             std::vector<int32> &align,
-                             MatrixIndexT start_frame,
-                             int32 size);
-  BaseFloat ComputeGopNumeraC(nnet3::DecodableAmNnetSimple &decodable,
                                     int32 phone_l, int32 phone, int32 phone_r,
                                     MatrixIndexT start_frame,
                                     int32 size);
-  BaseFloat ComputeGopDenominC(nnet3::DecodableAmNnetSimple &decodable,
+  BaseFloat ComputeGopDenomin(nnet3::DecodableAmNnetSimple &decodable,
                               int32 phone_l, int32 phone_r,
                               MatrixIndexT start_frame,
                               int32 size);
-  BaseFloat ComputeGopNumeraV(nnet3::DecodableAmNnetSimple &decodable,
-                                    int32 phone_l, int32 phone, int32 phone_r);
-  BaseFloat ComputeGopDenominV(nnet3::DecodableAmNnetSimple &decodable,
-                              int32 phone_l, int32 phone_r);
   void GetContextFromSplit(std::vector<std::vector<int32> > split,
                            int32 index, int32 &phone_l, int32 &phone, int32 &phone_r);
 };

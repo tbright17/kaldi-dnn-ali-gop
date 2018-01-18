@@ -72,9 +72,12 @@ int main(int argc, char *argv[]) {
         KALDI_WARN << "Can not find alignment for utterance " << utt;        
         continue;
       }
+
+      //KALDI_LOG << "Processing utterance " << utt;
+
       const Matrix<BaseFloat> &features = feature_reader.Value();
       const Matrix<BaseFloat> *online_ivector = &online_ivector_reader.Value(utt);
-      //KALDI_LOG << "ivector dimension is " << online_ivector->NumCols();
+      //KALDI_LOG << "ivector dimension is " << online_ivector->NumRows();
       const std::vector<int32> &transcript = transcript_reader.Value(utt);
 
       gop.Compute(features, online_ivector, transcript);

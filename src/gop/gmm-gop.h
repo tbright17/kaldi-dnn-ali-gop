@@ -40,6 +40,7 @@ public:
   std::vector<int32>& get_alignment();
   std::vector<int32>& Phonemes();
   Matrix<BaseFloat>& PhonemesConf();
+  Matrix<BaseFloat>& PhonemesFrameConf();
   Vector<BaseFloat>& get_phn_ll();
 
 protected:
@@ -52,6 +53,7 @@ protected:
   std::vector<int32> alignment_;
   std::vector<int32> phones_;
   Matrix<BaseFloat> phonemes_conf_;
+  Matrix<BaseFloat> phonemes_frame_conf_;
   Vector<BaseFloat> phones_loglikelihood_; // phoneme log likelihood
 
   BaseFloat Decode(fst::VectorFst<fst::StdArc> &fst,
@@ -66,6 +68,10 @@ protected:
   BaseFloat ComputeGopDenominViterbi(DecodableAmDiagGmmScaled &decodable,
                               int32 phone_l, int32 phone_r);
   Vector<BaseFloat> ComputePhonemesConf(DecodableAmDiagGmmScaled &decodable,
+                                    int32 phone_l, int32 phone_r,
+                                    MatrixIndexT start_frame,
+                                   int32 size);
+  void ComputeFramePhonemesConf(DecodableAmDiagGmmScaled &decodable,
                                     int32 phone_l, int32 phone_r,
                                     MatrixIndexT start_frame,
                                    int32 size);

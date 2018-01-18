@@ -69,7 +69,7 @@ echo "$0: computing GOP in $data using model from $srcdir, putting results in $d
 mdl=$srcdir/final.mdl
 tra="ark:utils/sym2int.pl --map-oov $oov -f 2- $lang/words.txt $sdata/JOB/text|";
 $cmd JOB=1:$nj $dir/log/gop.JOB.log \
-  compute-gmm-gop $dir/tree $dir/final.mdl $lang/L.fst "$feats" "$tra" "ark,t:$dir/gop.JOB" "ark,t:$dir/align.JOB" "ark,t:$dir/phoneme_ll.JOB" "ark,t:$dir/phoneme_conf.JOB" || exit 1;
+  compute-gmm-gop $dir/tree $dir/final.mdl $lang/L.fst "$feats" "$tra" "ark,t:$dir/gop.JOB" "ark,t:$dir/align.JOB" "ark,t:$dir/phoneme_ll.JOB" "ark,t:$dir/phoneme_conf.JOB" "ark,t:$dir/phoneme_frame_conf.JOB" || exit 1;
 
 # Generate alignment
 $cmd JOB=1:$nj $dir/log/align.JOB.log \
@@ -85,8 +85,12 @@ $cmd JOB=1:$nj $dir/log/align_phone.JOB.log \
 for n in $(seq $nj); do
   cat $dir/phoneme_conf.$n || exit 1;
 done > $dir/phoneme_conf.txt || exit 1
+for n in $(seq $nj); do
+  cat $dir/phoneme_frame_conf.$n || exit 1;
+done > $dir/phoneme_frame_conf.txt || exit 1
 
 python local/phn_conf_ops.py --phn_conf_file $dir/phoneme_conf.txt --all_phone_file $lang/phones.txt --output_dir $dir/phoneme_conf
+python local/phn_conf_ops.py --phn_conf_file $dir/phoneme_frame_conf.txt --all_phone_file $lang/phones.txt --output_dir $dir/phoneme_frame_conf
 
 python local/ctm2textgrid.py $nj $dir $dir/aligned_textgrid $lang/words.txt $lang/phones.txt $data/utt2dur
 

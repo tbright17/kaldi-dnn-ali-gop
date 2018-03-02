@@ -83,6 +83,9 @@ $cmd JOB=1:$nj $dir/log/align_phone.JOB.log \
   nbest-to-ctm "ark:-" "$dir/phone.JOB.ctm" || exit 1;
 
 for n in $(seq $nj); do
+  cat $dir/gop.$n || exit 1;
+done > $dir/gop.txt || exit 1
+for n in $(seq $nj); do
   cat $dir/phoneme_conf.$n || exit 1;
 done > $dir/phoneme_conf.txt || exit 1
 for n in $(seq $nj); do

@@ -77,6 +77,10 @@ $cmd JOB=1:$nj $dir/log/align_phone.JOB.log \
   lattice-to-phone-lattice "$dir/final.mdl" "ark,t:$dir/aligned.JOB" "ark:-" \| \
   nbest-to-ctm "ark:-" "$dir/phone.JOB.ctm" || exit 1;
 
+for n in $(seq $nj); do
+  cat $dir/gop.$n || exit 1;
+done > $dir/gop.txt || exit 1
+
 python local/ctm2textgrid.py $nj $dir $dir/aligned_textgrid $lang/words.txt $lang/phones.txt $data/utt2dur
 
 # Convenience for debug

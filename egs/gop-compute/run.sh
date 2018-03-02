@@ -10,7 +10,7 @@ set -e
 #set -x
 
 dnn=false
-decode_nj=1
+nj=4 # number of parallel jobs. Set it depending on number of CPU cores
 
 # Enviroment preparation
 . ./cmd.sh
@@ -31,12 +31,12 @@ data_dir=$2
 result_dir=$3
 
 # data preparation
-local/data_preparation.sh --dnn $dnn $audio_dir $data_dir
+local/data_preparation.sh --nj $nj --dnn $dnn $audio_dir $data_dir
 
 # Calculation
 if [[ "$dnn" = false ]]; then
   echo "Using GMM model!"
-  local/compute-gmm-gop.sh --nj "$decode_nj" --cmd "$decode_cmd" $data_dir data/lang exp/tri1 $result_dir   ### gmm model
+  local/compute-gmm-gop.sh --nj "$nj" --cmd "$decode_cmd" $data_dir data/lang exp/tri1 $result_dir   ### gmm model
 else
   echo "Using DNN model!"
   local/compute-dnn-gop.sh --nj "$decode_nj" --cmd "$decode_cmd" $data_dir $data_dir/ivectors_hires \

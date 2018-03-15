@@ -5,6 +5,7 @@
 # Begin configuration section.
 nj=1
 cmd=run.pl
+split_per_speaker=true
 # Begin configuration.
 # End configuration options.
 
@@ -20,6 +21,7 @@ if [ $# != 5 ]; then
    echo "  --config <config-file>                           # config containing options"
    echo "  --nj <nj>                                        # number of parallel jobs"
    echo "  --cmd (utils/run.pl|utils/queue.pl <queue opts>) # how to run jobs."
+   echo "  --split_per_speaker                              # split by speaker (true) or utterance (false)"
    exit 1;
 fi
 
@@ -36,7 +38,6 @@ done
 oov=`cat $lang/oov.int` || exit 1;
 mkdir -p $dir/log
 echo $nj > $dir/num_jobs
-sdata=$data/split$nj
 splice_opts=`cat $srcdir/splice_opts 2>/dev/null` # frame-splicing options.
 cp $srcdir/splice_opts $dir 2>/dev/null # frame-splicing options.
 cmvn_opts=`cat $srcdir/cmvn_opts 2>/dev/null`
@@ -44,7 +45,13 @@ cp $srcdir/cmvn_opts $dir 2>/dev/null # cmn/cmvn option.
 delta_opts=`cat $srcdir/delta_opts 2>/dev/null`
 cp $srcdir/delta_opts $dir 2>/dev/null
 
-[[ -d $sdata && $data/feats.scp -ot $sdata ]] || split_data.sh $data $nj || exit 1;
+if $split_per_speaker; then
+  sdata=$data/split$nj
+  [[ -d $sdata && $data/feats.scp -ot $sdata ]] || split_data.sh $data $nj || exit 1;
+else
+  sdata=$data/split${nj}utt
+  [[ -d $sdata && $data/feats.scp -ot $sdata ]] || split_data.sh --per-utt $data $nj || exit 1;
+fi
 
 utils/lang/check_phones_compatible.sh $lang/phones.txt $srcdir/phones.txt || exit 1;
 cp $lang/phones.txt $dir || exit 1;

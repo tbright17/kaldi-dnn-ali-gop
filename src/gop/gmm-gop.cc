@@ -169,32 +169,34 @@ Vector<BaseFloat> GmmGop::ComputePhonemesConf(DecodableAmDiagGmmScaled &decodabl
   phoneseq[2] = phone_r;
 
   const std::vector<int32> &phone_syms = tm_.GetPhones();
-
   Vector<BaseFloat> likelihood(phone_syms.size());
-
   for (size_t i = 0; i < phone_syms.size(); i++) {
+
+    fst::VectorFst<fst::StdArc> fst;
+    StateId start_state = fst.AddState();
+    fst.SetStart(start_state);
+
     int32 phone = phone_syms[i];
     phoneseq[1] = phone;
     const int pdfclass_num = tm_.GetTopo().NumPdfClasses(phone);
-    
-   BaseFloat phn_likelihood;
-    for (MatrixIndexT frame = start_frame; frame < start_frame + size; frame++) {
-      Vector<BaseFloat> temp_likelihood(pdfclass_num);
-      for (size_t c = 0; c < pdfclass_num; c++) {
-        int32 pdf_id;
-        KALDI_ASSERT(ctx_dep_.Compute(phoneseq, c, &pdf_id));
-        int32 tid = pdfid_to_tid[pdf_id];
+    StateId cur_state = start_state;
+    for (size_t c = 0; c < pdfclass_num; c++) {
+      int32 pdf_id;
+      KALDI_ASSERT(ctx_dep_.Compute(phoneseq, c, &pdf_id));
+      int32 tid = pdfid_to_tid[pdf_id];
 
-        temp_likelihood(c) = decodable.LogLikelihood(frame, tid); 
-      }
-      phn_likelihood += temp_likelihood.LogSumExp(5);
+      StateId next_state = fst.AddState();
+      Arc arc(tid, 0, Weight::One(), next_state);
+      fst.AddArc(cur_state, arc);
+      cur_state = next_state;
+
+      Arc arc_selfloop(tid, 0, Weight::One(), cur_state);
+      fst.AddArc(cur_state, arc_selfloop);
     }
-
-    likelihood(i) = phn_likelihood / size;
+    fst.SetFinal(cur_state, Weight::One());
+    likelihood(i) = Decode(fst, decodable)/size;
   }
-
   return likelihood;
-
 }
 
 void GmmGop::ComputeFramePhonemesConf(DecodableAmDiagGmmScaled &decodable,
@@ -222,7 +224,7 @@ void GmmGop::ComputeFramePhonemesConf(DecodableAmDiagGmmScaled &decodable,
         KALDI_ASSERT(ctx_dep_.Compute(phoneseq, c, &pdf_id));
         int32 tid = pdfid_to_tid[pdf_id];
 
-        temp_likelihood(c) = decodable.LogLikelihood(frame, tid); 
+        temp_likelihood(c) = decodable.LogLikelihood(frame, tid+1); 
       }
       likelihood(i) = temp_likelihood.LogSumExp(5);
     }
@@ -278,7 +280,7 @@ void GmmGop::Compute(const Matrix<BaseFloat> &feats,
     gop_result_(i) = (gop_numerator - gop_denominator) / split[i].size();
     phones_[i] = phone;
     phones_loglikelihood_(i) = gop_numerator;
-    phonemes_conf_.CopyRowFromVec(ComputePhonemesConf(ali_decodable,phone_l, phone_r,frame_start_idx, split[i].size()), i);
+    phonemes_conf_.CopyRowFromVec(ComputePhonemesConf(split_decodable,phone_l, phone_r,frame_start_idx, split[i].size()), i);
     ComputeFramePhonemesConf(ali_decodable, phone_l, phone_r,frame_start_idx, split[i].size());
 
     frame_start_idx += split[i].size();

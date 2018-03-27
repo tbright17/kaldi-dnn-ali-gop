@@ -8,7 +8,6 @@ from textgrid import TextGrid, Interval
 import sys, os
 import argparse
 import numpy as np
-import matplotlib.pyplot as plt
 import re, subprocess
 
 def phn_conf_processing(phn_conf_file, all_phone_file):

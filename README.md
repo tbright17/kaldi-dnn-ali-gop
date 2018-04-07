@@ -3,7 +3,7 @@
 Computes GOP (Goodness of Pronunciation) and do forced alignment bases on Kaldi with nnet3 support. The acoustic model is trained using librispeech database (960 hours data) with the scripts under kaldi/egs/librispeech.
 
 ## How to build
-1. Download [Kaldi](http://www.kaldi-asr.org). Don't compile.
+1. Download [Kaldi](https://github.com/kaldi-asr/kaldi). Don't compile.
 2. Put the folders under src into kaldi/src (replace Makefile).
 3. Compile the code as compiling kaldi (kaldi/src/INSTALL).
 4. Change KALDI_ROOT in egs/gop-compute/path.sh to your own KALDI_ROOT

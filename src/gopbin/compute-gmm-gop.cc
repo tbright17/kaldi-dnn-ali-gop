@@ -24,14 +24,17 @@ int main(int argc, char *argv[]) {
     
     const char *usage =
         "Compute GOP with GMM-based models.\n"
-        "Usage:   compute-gmm-gop [options] tree-in model-in lexicon-fst-in feature-rspecifier transcriptions-rspecifier gop-wspecifier\n"
+        "Usage:   compute-gmm-gop [options] tree-in model-in lexicon-fst-in feature-rspecifier transcriptions-rspecifier gop-wspecifier alignment"
+        "-wspecifier phn-ll-wspecifier phn-conf-wspecifier(optional) phn-frame-conf-wspcifier(optional)\n"
         "e.g.: \n"
         " compute-gmm-gop tree 1.mdl lex.fst scp:train.scp ark:train.tra ark,t:gop.1 ark,t:algin.1 ark,t:phn_ll.1\n";
 
     ParseOptions po(usage);
+    std::string phn_conf_wspecifier;
+    std::string phn_frame_conf_wspecifier;
 
     po.Read(argc, argv);
-    if (po.NumArgs() != 10) {
+    if (po.NumArgs() != 8 && po.NumArgs() != 10) {
       po.PrintUsage();
       exit(1);
     }
@@ -44,8 +47,10 @@ int main(int argc, char *argv[]) {
     std::string gop_wspecifier = po.GetArg(6);
     std::string alignment_wspecifier = po.GetArg(7);
     std::string phn_ll_wspecifier = po.GetArg(8);
-    std::string phn_conf_wspecifier = po.GetArg(9);
-    std::string phn_frame_conf_wspecifier = po.GetArg(10);
+    if (po.NumArgs() == 10) {
+      phn_conf_wspecifier = po.GetArg(9);
+      phn_frame_conf_wspecifier = po.GetArg(10);
+    }
 
     SequentialBaseFloatMatrixReader feature_reader(feature_rspecifier);
     RandomAccessInt32VectorReader transcript_reader(transcript_rspecifier);
@@ -68,12 +73,16 @@ int main(int argc, char *argv[]) {
       const Matrix<BaseFloat> &features = feature_reader.Value();
       const std::vector<int32> &transcript = transcript_reader.Value(utt);
 
-      gop.Compute(features, transcript);
+      gop.Compute(features, transcript, &phn_conf_writer, &phn_frame_conf_writer);
       gop_writer.Write(utt, gop.Result());
       alignment_writer.Write(utt, gop.get_alignment());
       phn_ll_writer.Write(utt, gop.get_phn_ll());
-      phn_conf_writer.Write(utt, gop.PhonemesConf());
-      phn_frame_conf_writer.Write(utt, gop.PhonemesFrameConf());
+      if (&phn_conf_writer != NULL && phn_conf_writer.IsOpen()) {
+        phn_conf_writer.Write(utt, gop.PhonemesConf());
+      }
+      if (&phn_frame_conf_writer != NULL && phn_frame_conf_writer.IsOpen()) {
+        phn_frame_conf_writer.Write(utt, gop.PhonemesFrameConf());
+      }
     }
     KALDI_LOG << "Done.";
     return 0;

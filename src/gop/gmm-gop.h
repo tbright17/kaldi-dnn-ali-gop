@@ -35,7 +35,9 @@ public:
   void Init(std::string &tree_in_filename,
             std::string &model_in_filename,
             std::string &lex_in_filename);
-  void Compute(const Matrix<BaseFloat> &feats, const std::vector<int32> &transcript);
+  void Compute(const Matrix<BaseFloat> &feats, const std::vector<int32> &transcript,
+              BaseFloatMatrixWriter *phn_conf_writer,
+              BaseFloatMatrixWriter *phn_frame_conf_writer);
   Vector<BaseFloat>& Result();
   std::vector<int32>& get_alignment();
   std::vector<int32>& Phonemes();

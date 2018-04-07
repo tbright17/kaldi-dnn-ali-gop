@@ -162,6 +162,39 @@ Vector<BaseFloat> GmmGop::ComputePhonemesConf(DecodableAmDiagGmmScaled &decodabl
                                     int32 phone_l, int32 phone_r,
                                     MatrixIndexT start_frame,
                                    int32 size) {
+//   KALDI_ASSERT(ctx_dep_.ContextWidth() == 3);
+//   KALDI_ASSERT(ctx_dep_.CentralPosition() == 1);
+//   std::vector<int32> phoneseq(3);
+//   phoneseq[0] = phone_l;
+//   phoneseq[2] = phone_r;
+
+//   const std::vector<int32> &phone_syms = tm_.GetPhones();
+
+//   Vector<BaseFloat> likelihood(phone_syms.size());
+
+//   for (size_t i = 0; i < phone_syms.size(); i++) {
+//     int32 phone = phone_syms[i];
+//     phoneseq[1] = phone;
+//     const int pdfclass_num = tm_.GetTopo().NumPdfClasses(phone);
+    
+//     BaseFloat phn_likelihood = 0.0;
+//     for (MatrixIndexT frame = start_frame; frame < start_frame + size; frame++) {
+//       Vector<BaseFloat> temp_likelihood(pdfclass_num);
+//       for (size_t c = 0; c < pdfclass_num; c++) {
+//         int32 pdf_id;
+//         KALDI_ASSERT(ctx_dep_.Compute(phoneseq, c, &pdf_id));
+//         int32 tid = pdfid_to_tid[pdf_id];
+
+//         temp_likelihood(c) = decodable.LogLikelihood(frame, tid+1); 
+//       }
+//       phn_likelihood += temp_likelihood.LogSumExp(5);
+//     }
+
+//     likelihood(i) = phn_likelihood / size;
+//   }
+
+//   return likelihood;
+
   KALDI_ASSERT(ctx_dep_.ContextWidth() == 3);
   KALDI_ASSERT(ctx_dep_.CentralPosition() == 1);
   std::vector<int32> phoneseq(3);
@@ -242,7 +275,9 @@ void GmmGop::GetContextFromSplit(std::vector<std::vector<int32> > split,
 }
 
 void GmmGop::Compute(const Matrix<BaseFloat> &feats,
-                     const std::vector<int32> &transcript) {
+                     const std::vector<int32> &transcript,
+                     BaseFloatMatrixWriter *phn_conf_writer,
+                     BaseFloatMatrixWriter *phn_frame_conf_writer) {
   // Align
   fst::VectorFst<fst::StdArc> ali_fst;
   gc_->CompileGraphFromText(transcript, &ali_fst);
@@ -280,8 +315,12 @@ void GmmGop::Compute(const Matrix<BaseFloat> &feats,
     gop_result_(i) = (gop_numerator - gop_denominator) / split[i].size();
     phones_[i] = phone;
     phones_loglikelihood_(i) = gop_numerator;
-    phonemes_conf_.CopyRowFromVec(ComputePhonemesConf(split_decodable,phone_l, phone_r,frame_start_idx, split[i].size()), i);
-    ComputeFramePhonemesConf(ali_decodable, phone_l, phone_r,frame_start_idx, split[i].size());
+    if (phn_conf_writer != NULL && phn_conf_writer->IsOpen()) {
+      phonemes_conf_.CopyRowFromVec(ComputePhonemesConf(split_decodable,phone_l, phone_r,frame_start_idx, split[i].size()), i);
+    }
+    if (phn_frame_conf_writer != NULL && phn_frame_conf_writer->IsOpen()) {
+      ComputeFramePhonemesConf(ali_decodable, phone_l, phone_r,frame_start_idx, split[i].size());
+    }
 
     frame_start_idx += split[i].size();
   }

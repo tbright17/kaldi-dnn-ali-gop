@@ -11,10 +11,19 @@ Computes forced-alignment and GOP (Goodness of Pronunciation) bases on Kaldi wit
 ## Run the example
 ```
 cd egs/gop-compute
-./run.sh --dnn true/false audio_dir data_dir result_dir
+./run.sh --nj 1 --split_per_speaker true/false --dnn true/false audio_dir data_dir result_dir
 ```
+
+--nj: number of jobs to do parallel computing, should be smaller than your number of CPU cores
+
+--split_per_speaker: for parallelization, whether to split by speaker (true) or by utterance (false)
+
+-dnn: use DNN acoustic model or GMM acoustic model
+
 audio_dir: the folder where you put your audio files
+
 data_dir: intermediate folder where acoustic features related files are stored
+
 result_dir: where results are stored (aligned_textgrid: alignments in textgrid format; gop.txt: gop values for every phoneme of every utterance)
 
 ### Notes on data preparation

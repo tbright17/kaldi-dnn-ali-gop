@@ -32,7 +32,7 @@ To use this tool, audio files (.wav) and corresponding transcript (.lab) needs t
 └── ...
 ```
 
-Do not use space in speaker folder name or utterance file name, using underscore instead. Make sure different speakers have different folder names (speaker ID) and different audio files have different file name (utt ID). Please refer to Kaldi's documentation on [data preparation] (http://kaldi-asr.org/doc/data_prep.html).
+Do not use space in speaker folder name or utterance file name, using underscore instead. Make sure different speakers have different folder names (speaker ID) and different audio files have different file name (utt ID). Please refer to Kaldi's documentation on [data preparation](http://kaldi-asr.org/doc/data_prep.html).
 
 ## To-do
 - [ ] Add GPU support

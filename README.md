@@ -1,6 +1,6 @@
 
-# kaldi-gop
-Computes GOP (Goodness of Pronunciation) and do forced alignment bases on Kaldi with nnet3 support. The acoustic model is trained using librispeech database (960 hours data) with the scripts under kaldi/egs/librispeech.
+# kaldi-dnn-ali-gop
+Computes forced-alignment and GOP (Goodness of Pronunciation) bases on Kaldi with nnet3 support. The acoustic model is trained using librispeech database (960 hours data) with the scripts under kaldi/egs/librispeech.
 
 ## How to build
 1. Download [Kaldi](https://github.com/kaldi-asr/kaldi). Don't compile.
@@ -13,7 +13,9 @@ Computes GOP (Goodness of Pronunciation) and do forced alignment bases on Kaldi 
 cd egs/gop-compute
 ./run.sh --dnn true/false audio_dir data_dir result_dir
 ```
-See meaning of arguments in run.sh
+audio_dir: the folder where you put your audio files
+data_dir: intermediate folder where acoustic features related files are stored
+result_dir: where results are stored (aligned_textgrid: alignments in textgrid format; gop.txt: gop values for every phoneme of every utterance)
 
 ### Notes on data preparation
 To use this tool, audio files (.wav) and corresponding transcript (.lab) needs to be prepared and stored in following format:
@@ -21,7 +23,7 @@ To use this tool, audio files (.wav) and corresponding transcript (.lab) needs t
 ```
 .
 ├── ...
-├── data_dir                   
+├── audio_dir                   
 │   ├── speaker1 # indicate speaker ID          
 │   ├── speaker2         
 │   └── speaker3
@@ -30,7 +32,7 @@ To use this tool, audio files (.wav) and corresponding transcript (.lab) needs t
 └── ...
 ```
 
-Do not use space in speaker folder name or utterance file name, using underscore instead. Make sure different speakers have different folder names (speaker ID) and different audio files have different file name (utt ID).
+Do not use space in speaker folder name or utterance file name, using underscore instead. Make sure different speakers have different folder names (speaker ID) and different audio files have different file name (utt ID). Please refer to Kaldi's documentation on [data preparation] (http://kaldi-asr.org/doc/data_prep.html).
 
 ## To-do
 - [ ] Add GPU support

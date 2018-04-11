@@ -10,7 +10,7 @@ set -e
 #set -x
 
 dnn=false
-nj=4 # number of parallel jobs. Set it depending on number of CPU cores
+nj=1 # number of parallel jobs. Set it depending on number of CPU cores
 split_per_speaker=true # split by speaker (true) or sentence (false)
 
 # Enviroment preparation

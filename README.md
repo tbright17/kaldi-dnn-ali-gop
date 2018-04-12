@@ -1,6 +1,11 @@
 
 # kaldi-dnn-ali-gop
-Computes forced-alignment and GOP (Goodness of Pronunciation) bases on Kaldi with nnet3 support. The acoustic model is trained using librispeech database (960 hours data) with the scripts under kaldi/egs/librispeech.
+Computes forced-alignment and GOP (Goodness of Pronunciation) bases on Kaldi with nnet3 support. Can optionally output the phoneme confusion matrix on frame or phoneme segment level. The acoustic model is trained using librispeech database (960 hours data) with the scripts under kaldi/egs/librispeech.
+
+## Requirements
+1. sox (http://sox.sourceforge.net/)
+2. textgrid (https://github.com/kylebgorman/textgrid)
+3. numpy (optional, only if you want the phoneme confusion measurements)
 
 ## How to build
 1. Download [Kaldi](https://github.com/kaldi-asr/kaldi). Don't compile.
@@ -18,7 +23,7 @@ cd egs/gop-compute
 
 --split_per_speaker: for parallelization, whether to split by speaker (true) or by utterance (false)
 
--dnn: use DNN acoustic model or GMM acoustic model
+--dnn: use DNN acoustic model or GMM acoustic model
 
 audio_dir: the folder where you put your audio files
 

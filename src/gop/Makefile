@@ -9,7 +9,7 @@ LDLIBS += $(CUDA_LDLIBS)
 TESTFILES =
 
 
-OBJFILES = gmm-gop.o dnn-gop.o
+OBJFILES = gmm-gop.o gmm-gop2.o dnn-gop.o
 
 
 LIBNAME = kaldi-gop

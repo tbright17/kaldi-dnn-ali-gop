@@ -6,7 +6,7 @@ include ../kaldi.mk
 LDFLAGS += $(CUDA_LDFLAGS)
 LDLIBS += $(CUDA_LDLIBS)
 
-BINFILES = compute-gmm-gop compute-dnn-gop
+BINFILES = compute-gmm-gop compute-gmm-gop2 compute-dnn-gop
 
 OBJFILES =
 

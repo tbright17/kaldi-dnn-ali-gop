@@ -53,3 +53,8 @@ Do not use space in speaker folder name or utterance file name, using underscore
 - [x] Convert alignment results to readable format (textgrid)
 - [ ] Add comparison between GMM and DNN (nnet3)
 - [x] Add feature extraction script
+
+### Citation
+
+Please kindly cite the following paper if you find this repo useful in your research:
+M. Tu, A. Grabek, J. Liss and V. Berisha, "Investigating the role of L1 in automatic pronunciation evaluation of L2 speech", to appear in proceedings of Interspeech 2018

@@ -57,4 +57,5 @@ Do not use space in speaker folder name or utterance file name, using underscore
 ### Citation
 
 Please kindly cite the following paper if you find this repo useful in your research:
+
 M. Tu, A. Grabek, J. Liss and V. Berisha, "Investigating the role of L1 in automatic pronunciation evaluation of L2 speech", to appear in proceedings of Interspeech 2018

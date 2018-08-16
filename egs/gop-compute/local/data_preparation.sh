@@ -37,6 +37,7 @@ for d in $data/*/; do
         filepath="$(dirname $f)"
         spkname="$(basename $filepath)"
         echo "${filename%.*} sox $f -e signed-integer -b 16 -r 16000 -t wav - |" >> $dir/wav.scp # Prepare wav.scp
+        #echo "${filename%.*} sox $f -r 16000 -t amr-wb -C 8 - | sox - -t wav - |" >> $dir/wav.scp # Prepare wav.scp
         echo "$spkname ${filename%.*}" >> $dir/spk2utt # Prepare spk2utt
         echo "${filename%.*} $spkname" >> $dir/utt2spk # Prepare utt2spk
         (

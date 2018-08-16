@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # Copyright 2017    Ming Tu
 
@@ -12,12 +13,13 @@ import sys
 import traceback
 from decimal import Decimal
 from textgrid import TextGrid, IntervalTier
+from io import open as io_open
 #from textgrid import *
 
 
 def generate_mapping(mapping_file):
     mapping = {}
-    with open(mapping_file, 'r') as fid:
+    with io_open(mapping_file, 'r', encoding='utf-8') as fid:
         word_num_pairs = fid.readlines()
         for item in word_num_pairs:
             word = item.strip().split()[0]
@@ -104,9 +106,9 @@ def ctm_to_textgrid(word_ctm, phone_ctm, out_directory, utt2dur, frameshift=0.01
                 traceback.format_exception(exc_type, exc_value, exc_traceback))
     if textgrid_write_errors:
         error_log = os.path.join(out_directory, 'output_errors.txt')
-        with open(error_log, 'w', encoding='utf8') as f:
+        with io_open(error_log, 'w', encoding='utf-8') as f:
             f.write(
-                'The following exceptions were encountered during the ouput of the alignments to TextGrids:\n\n')
+                u'The following exceptions were encountered during the ouput of the alignments to TextGrids:\n\n')
             for k, v in textgrid_write_errors.items():
-                f.write('{}:\n'.format(k))
-                f.write('{}\n\n'.format(v))
+                f.write(u'{}:\n'.format(k))
+                f.write(u'{}\n\n'.format(v))

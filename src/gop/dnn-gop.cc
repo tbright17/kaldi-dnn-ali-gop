@@ -96,7 +96,10 @@ BaseFloat DnnGop::ComputeGopNumera(nnet3::DecodableAmNnetSimple &decodable,
     Vector<BaseFloat> temp_likelihood(pdfclass_num);
     for (size_t c = 0; c < pdfclass_num; c++) {
       int32 pdf_id;
-      KALDI_ASSERT(ctx_dep_.Compute(phoneseq, c, &pdf_id));
+      //KALDI_ASSERT(ctx_dep_.Compute(phoneseq, c, &pdf_id));
+      if (!ctx_dep_.Compute(phoneseq, c, &pdf_id)) {
+        KALDI_ERROR << "Failed to obtain pdf_id";
+      }
       int32 tid = pdfid_to_tid[pdf_id];
 
       temp_likelihood(c) = decodable.LogLikelihood(frame, tid); 
@@ -133,7 +136,10 @@ BaseFloat DnnGop::ComputeGopDenomin(nnet3::DecodableAmNnetSimple &decodable,
       Vector<BaseFloat> temp_likelihood(pdfclass_num);
       for (size_t c = 0; c < pdfclass_num; c++) {
         int32 pdf_id;
-        KALDI_ASSERT(ctx_dep_.Compute(phoneseq, c, &pdf_id));
+        //KALDI_ASSERT(ctx_dep_.Compute(phoneseq, c, &pdf_id));
+        if (!ctx_dep_.Compute(phoneseq, c, &pdf_id)) {
+          KALDI_ERROR << "Failed to obtain pdf_id";
+        }
         int32 tid = pdfid_to_tid[pdf_id];
 
         temp_likelihood(c) = decodable.LogLikelihood(frame, tid); 

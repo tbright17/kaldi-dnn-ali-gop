@@ -1,6 +1,6 @@
 
 # kaldi-dnn-ali-gop
-Computes forced-alignment and GOP (Goodness of Pronunciation) bases on Kaldi with nnet3 support. Can optionally output the phoneme confusion matrix on frame or phoneme segment level. The acoustic model is trained using librispeech database (960 hours data) with the scripts under kaldi/egs/librispeech.
+Computes GOP (Goodness of Pronunciation) bases on Kaldi with nnet3 support. This branch auusme the alignment information is available. Can optionally output the phoneme confusion matrix on frame or phoneme segment level. The acoustic model is trained using librispeech database (960 hours data) with the scripts under kaldi/egs/librispeech.
 
 ## Requirements
 1. sox (http://sox.sourceforge.net/)

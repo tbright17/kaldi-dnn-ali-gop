@@ -111,7 +111,7 @@ BaseFloat GmmGop2::ComputeGopNumeraViterbi(DecodableAmDiagGmmScaled &decodable,
     int32 pdf_id;
     //KALDI_ASSERT(ctx_dep_.Compute(phoneseq, c, &pdf_id));
     if (!ctx_dep_.Compute(phoneseq, c, &pdf_id)) {
-      KALDI_ERROR << "Failed to obtain pdf_id";
+      KALDI_ERR << "Failed to obtain pdf_id";
     }
     int32 tid = pdfid_to_tid[pdf_id];
 
@@ -150,7 +150,7 @@ BaseFloat GmmGop2::ComputeGopDenominViterbi(DecodableAmDiagGmmScaled &decodable,
       int32 pdf_id;
       //KALDI_ASSERT(ctx_dep_.Compute(phoneseq, c, &pdf_id));
       if (!ctx_dep_.Compute(phoneseq, c, &pdf_id)) {
-        KALDI_ERROR << "Failed to obtain pdf_id";
+        KALDI_ERR << "Failed to obtain pdf_id";
       }
       int32 tid = pdfid_to_tid[pdf_id];
 

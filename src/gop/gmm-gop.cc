@@ -105,7 +105,7 @@ BaseFloat GmmGop::ComputeGopNumeraViterbi(DecodableAmDiagGmmScaled &decodable,
     int32 pdf_id;
     //KALDI_ASSERT(ctx_dep_.Compute(phoneseq, c, &pdf_id));
     if (!ctx_dep_.Compute(phoneseq, c, &pdf_id)) {
-      KALDI_ERROR << "Failed to obtain pdf_id";
+      KALDI_ERR << "Failed to obtain pdf_id";
     }
     int32 tid = pdfid_to_tid[pdf_id];
 
@@ -144,7 +144,7 @@ BaseFloat GmmGop::ComputeGopDenominViterbi(DecodableAmDiagGmmScaled &decodable,
       int32 pdf_id;
       //KALDI_ASSERT(ctx_dep_.Compute(phoneseq, c, &pdf_id));
       if (!ctx_dep_.Compute(phoneseq, c, &pdf_id)) {
-        KALDI_ERROR << "Failed to obtain pdf_id";
+        KALDI_ERR << "Failed to obtain pdf_id";
       }
       int32 tid = pdfid_to_tid[pdf_id];
 
@@ -223,7 +223,7 @@ Vector<BaseFloat> GmmGop::ComputePhonemesConf(DecodableAmDiagGmmScaled &decodabl
       int32 pdf_id;
       //KALDI_ASSERT(ctx_dep_.Compute(phoneseq, c, &pdf_id));
       if (!ctx_dep_.Compute(phoneseq, c, &pdf_id)) {
-        KALDI_ERROR << "Failed to obtain pdf_id";
+        KALDI_ERR << "Failed to obtain pdf_id";
       }
       int32 tid = pdfid_to_tid[pdf_id];
 
@@ -265,7 +265,7 @@ void GmmGop::ComputeFramePhonemesConf(DecodableAmDiagGmmScaled &decodable,
         int32 pdf_id;
         //KALDI_ASSERT(ctx_dep_.Compute(phoneseq, c, &pdf_id));
         if (!ctx_dep_.Compute(phoneseq, c, &pdf_id)) {
-          KALDI_ERROR << "Failed to obtain pdf_id";
+          KALDI_ERR << "Failed to obtain pdf_id";
         }
         int32 tid = pdfid_to_tid[pdf_id];
 

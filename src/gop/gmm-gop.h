@@ -36,6 +36,7 @@ public:
             std::string &model_in_filename,
             std::string &lex_in_filename);
   void Compute(const Matrix<BaseFloat> &feats, const std::vector<int32> &transcript,
+              const Matrix<BaseFloat> &align_in,
               BaseFloatMatrixWriter *phn_conf_writer,
               BaseFloatMatrixWriter *phn_frame_conf_writer);
   Vector<BaseFloat>& Result();

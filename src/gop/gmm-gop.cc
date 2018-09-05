@@ -288,6 +288,7 @@ void GmmGop::GetContextFromSplit(std::vector<std::vector<int32> > split,
 
 void GmmGop::Compute(const Matrix<BaseFloat> &feats,
                      const std::vector<int32> &transcript,
+                     const Matrix<BaseFloat> &align_in,
                      BaseFloatMatrixWriter *phn_conf_writer,
                      BaseFloatMatrixWriter *phn_frame_conf_writer) {
   // Align
@@ -303,14 +304,22 @@ void GmmGop::Compute(const Matrix<BaseFloat> &feats,
 
   std::vector<std::vector<int32> > split;
   SplitToPhones(tm_, alignment_, &split);
+
+  //KALDI_LOG << "Number of calcualted phonemes: " << split.size() <<
+  //            "; Number of input phonemes: " << align_in.NumRows();
+  if (split.size() != align_in.NumRows()) {
+        KALDI_ERR << "Input alignment and calculated alignment have different number of phonemes!";        
+  }
+
   gop_result_.Resize(split.size());
   phones_.resize(split.size());
   phones_loglikelihood_.Resize(split.size());
   phonemes_conf_.Resize(split.size(),phone_syms.size());
   phonemes_frame_conf_.Resize(feats.NumRows(), phone_syms.size());
-  int32 frame_start_idx = 0;
+  int32 frame_start_idx = int32(align_in(0,0));
   for (MatrixIndexT i = 0; i < split.size(); i++) {
-    SubMatrix<BaseFloat> feats_in_phone = feats.Range(frame_start_idx, split[i].size(),
+    //KALDI_LOG << frame_start_idx << "--->" << int32(align_in(i,1));
+    SubMatrix<BaseFloat> feats_in_phone = feats.Range(frame_start_idx, int32(align_in(i,1))-frame_start_idx,
                                                       0, feats.NumCols());
     const Matrix<BaseFloat> features(feats_in_phone);
     DecodableAmDiagGmmScaled split_decodable(am_, tm_, features, 1.0); // 1.0 is the acoustic scale
@@ -322,19 +331,19 @@ void GmmGop::Compute(const Matrix<BaseFloat> &feats,
     BaseFloat gop_numerator = use_viterbi_numera ?
                                 ComputeGopNumeraViterbi(split_decodable, phone_l, phone, phone_r):
                                 ComputeGopNumera(ali_decodable, alignment_,
-                                                 frame_start_idx, split[i].size());
+                                                 frame_start_idx, int32(align_in(i,1))-frame_start_idx);
     BaseFloat gop_denominator = ComputeGopDenominViterbi(split_decodable, phone_l, phone_r);
-    gop_result_(i) = (gop_numerator - gop_denominator) / split[i].size();
+    gop_result_(i) = (gop_numerator - gop_denominator) / (int32(align_in(i,1))-frame_start_idx);
     phones_[i] = phone;
     phones_loglikelihood_(i) = gop_numerator;
     if (phn_conf_writer != NULL && phn_conf_writer->IsOpen()) {
-      phonemes_conf_.CopyRowFromVec(ComputePhonemesConf(split_decodable,phone_l, phone_r,frame_start_idx, split[i].size()), i);
+      phonemes_conf_.CopyRowFromVec(ComputePhonemesConf(split_decodable,phone_l, phone_r,frame_start_idx, int32(align_in(i,1))-frame_start_idx), i);
     }
     if (phn_frame_conf_writer != NULL && phn_frame_conf_writer->IsOpen()) {
-      ComputeFramePhonemesConf(ali_decodable, phone_l, phone_r,frame_start_idx, split[i].size());
+      ComputeFramePhonemesConf(ali_decodable, phone_l, phone_r,frame_start_idx, int32(align_in(i,1))-frame_start_idx);
     }
 
-    frame_start_idx += split[i].size();
+    frame_start_idx = int32(align_in(i,1));
   }
 }
 

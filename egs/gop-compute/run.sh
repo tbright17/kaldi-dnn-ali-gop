@@ -36,6 +36,9 @@ result_dir=$3
 # data preparation
 local/data_preparation.sh --nj $nj --dnn $dnn $audio_dir $data_dir
 
+# prepare alignment information
+local/prepare_align.py $audio_dir $data_dir
+
 # Calculation
 if [[ "$dnn" = false ]]; then
   echo "Using GMM model!"

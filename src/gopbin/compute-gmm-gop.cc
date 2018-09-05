@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
     std::string phn_frame_conf_wspecifier;
 
     po.Read(argc, argv);
-    if (po.NumArgs() != 8 && po.NumArgs() != 10) {
+    if (po.NumArgs() != 9 && po.NumArgs() != 11) {
       po.PrintUsage();
       exit(1);
     }
@@ -43,17 +43,19 @@ int main(int argc, char *argv[]) {
     std::string model_in_filename = po.GetArg(2);
     std::string lex_in_filename = po.GetArg(3);
     std::string feature_rspecifier = po.GetArg(4);
-    std::string transcript_rspecifier = po.GetArg(5);
-    std::string gop_wspecifier = po.GetArg(6);
-    std::string alignment_wspecifier = po.GetArg(7);
-    std::string phn_ll_wspecifier = po.GetArg(8);
-    if (po.NumArgs() == 10) {
-      phn_conf_wspecifier = po.GetArg(9);
-      phn_frame_conf_wspecifier = po.GetArg(10);
+    std::string align_rspecifier = po.GetArg(5);
+    std::string transcript_rspecifier = po.GetArg(6);
+    std::string gop_wspecifier = po.GetArg(7);
+    std::string alignment_wspecifier = po.GetArg(8);
+    std::string phn_ll_wspecifier = po.GetArg(9);
+    if (po.NumArgs() == 11) {
+      phn_conf_wspecifier = po.GetArg(10);
+      phn_frame_conf_wspecifier = po.GetArg(11);
     }
 
     SequentialBaseFloatMatrixReader feature_reader(feature_rspecifier);
     RandomAccessInt32VectorReader transcript_reader(transcript_rspecifier);
+    RandomAccessBaseFloatMatrixReader align_reader(align_rspecifier);
     BaseFloatVectorWriter gop_writer(gop_wspecifier);
     Int32VectorWriter alignment_writer(alignment_wspecifier);
     BaseFloatVectorWriter phn_ll_writer(phn_ll_wspecifier);
@@ -67,13 +69,18 @@ int main(int argc, char *argv[]) {
     for (; !feature_reader.Done(); feature_reader.Next()) {
       std::string utt = feature_reader.Key();
       if (! transcript_reader.HasKey(utt)) {
+        KALDI_WARN << "Can not find transcript for utterance " << utt;        
+        continue;
+      }
+      if (! align_reader.HasKey(utt)) {
         KALDI_WARN << "Can not find alignment for utterance " << utt;        
         continue;
       }
       const Matrix<BaseFloat> &features = feature_reader.Value();
       const std::vector<int32> &transcript = transcript_reader.Value(utt);
+      const Matrix<BaseFloat> &align_in = align_reader.Value(utt);
 
-      gop.Compute(features, transcript, &phn_conf_writer, &phn_frame_conf_writer);
+      gop.Compute(features, transcript, align_in, &phn_conf_writer, &phn_frame_conf_writer);
       gop_writer.Write(utt, gop.Result());
       alignment_writer.Write(utt, gop.get_alignment());
       phn_ll_writer.Write(utt, gop.get_phn_ll());

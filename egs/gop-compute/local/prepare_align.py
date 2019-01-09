@@ -47,8 +47,8 @@ if __name__ == '__main__':
 
         for intervals in my_tg_file.tiers[1]:
             if len(intervals.mark) != 0:
-                int_array = np.vstack((int_array, np.array([float(intervals.minTime)*1000/args.frame_sift, 
-                float(intervals.maxTime)*1000/args.frame_sift])))
+                int_array = np.vstack((int_array, np.array([float(intervals.minTime)*1000/args.frame_shift, 
+                float(intervals.maxTime)*1000/args.frame_shift])))
 
         ark_dict[uttid] = int_array
     

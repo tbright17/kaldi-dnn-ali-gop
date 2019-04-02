@@ -1,3 +1,4 @@
+[![996.icu](https://img.shields.io/badge/link-996.icu-red.svg)](https://996.icu)
 
 # kaldi-dnn-ali-gop
 Computes forced-alignment and GOP (Goodness of Pronunciation) bases on Kaldi with nnet3 support. Can optionally output the phoneme confusion matrix on frame or phoneme segment level. The acoustic model is trained using librispeech database (960 hours data) with the scripts under kaldi/egs/librispeech.
